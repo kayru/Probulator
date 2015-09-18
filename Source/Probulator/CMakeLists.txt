@@ -1,5 +1,10 @@
 add_executable(Probulator
-	Main.cpp
-	Image.cpp
+	Common.h
 	Image.h
+	Math.h
+	SphericalGaussian.h
+	Thread.h
+	Image.cpp
+	Main.cpp
+	SphericalGaussian.cpp
 )
