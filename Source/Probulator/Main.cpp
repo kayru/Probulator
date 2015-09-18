@@ -7,7 +7,7 @@ using namespace Probulator;
 
 int main(int argc, char** argv)
 {
-#if 0
+#if 1
 
 	if (argc < 2)
 	{
@@ -23,17 +23,18 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	auto function = [&](vec3 direction)
+	auto getSample = [&](vec3 direction)
 	{
 		return (vec3)inputImage.sampleNearest(cartesianToLatLongTexcoord(direction));
 	};
 
 #else
 
-	auto function = [&](vec3 direction)
+	auto getSample = [&](vec3 direction)
 	{
-		// return 5.0f * vec3(pow(max(0.0f, -direction.z), 6.0f));
-		return vec3(1.0f);
+		//return vec3(max(0.0f, -direction.z));
+		return 10.0f * vec3(pow(max(0.0f, -direction.z), 100.0f));
+		//return vec3(1.0f);
 	};
 
 #endif
@@ -50,10 +51,9 @@ int main(int argc, char** argv)
 	{
 		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(imageSize - ivec2(1));
 		vec3 direction = latLongTexcoordToCartesian(uv);
-		vec3 sample = function(direction);
-		pixel.r = sample.r;
-		pixel.g = sample.g;
-		pixel.b = sample.b;
+		vec3 sample = getSample(direction);
+
+		pixel = vec4(sample, 1.0f);
 
 		averageRadianceSample += sample.r;
 	});
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 		vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
 		vec3 direction = sampleUniformSphere(sampleUv);
 
-		vec3 sample = (vec3)function(direction);
+		vec3 sample = getSample(direction);
 
 		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
 		{
@@ -97,38 +97,68 @@ int main(int argc, char** argv)
 		}
 	}
 
+	////////////////////////////////////////////////////////
+	// Generate radiance image reconstructed from SG basis
+	////////////////////////////////////////////////////////
+
+	float averageRadianceSgSample = 0.0f;
+	Image radianceSgImage(imageSize);
+	radianceSgImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
+	{
+		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(imageSize - ivec2(1));
+		vec3 direction = latLongTexcoordToCartesian(uv);
+		vec3 sample = vec3(0.0f);
+		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
+		{
+			const SphericalGaussian& sg = lobes[lobeIt];
+			sample += sgEvaluate(sg, direction);
+		}
+		pixel = vec4(sample, 1.0f);
+
+		averageRadianceSgSample += sample.r;
+	});
+
+	radianceSgImage.writePng("radianceSG.png");
+
+	averageRadianceSgSample /= radianceSgImage.getPixelCount();
+	printf("Average SG radiance: %f\n", averageRadianceSgSample);
+
+
 	/////////////////////////////////////////////////////////////////////
 	// Generate irradiance image by convolving SG lighting with SG BRDF
 	/////////////////////////////////////////////////////////////////////
 
 	float averageSgIrradianceSample = 0.0f;
 	Image irradianceSgImage(imageSize);
+
+	//SphericalGaussian brdf = sgCosineLobe();
+	SphericalGaussian brdf;
+	brdf.lambda = 6.5f; // Chosen arbitrarily through experimentation
+	brdf.mu = vec3(sgFindMu(brdf.lambda, pi));
+
 	irradianceSgImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
 	{
 		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(irradianceSgImage.getSize() - ivec2(1));
 		vec3 direction = latLongTexcoordToCartesian(uv);
 
-		SphericalGaussian cosineLobe = sgCosineLobe(direction);
-		cosineLobe.lambda = 1.5f*cosineLobe.lambda;
-		cosineLobe.mu = vec3(sgFindMu(cosineLobe.lambda, sgCosineLambda(), sgCosineMu()));
-
+		brdf.p = direction;
+		
 		vec3 sample = vec3(0.0f);
 		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
 		{
 			const SphericalGaussian& sg = lobes[lobeIt];
-			sample += sgDot(sg, cosineLobe);
+			sample += sgDot(sg, brdf);
 		}
 
 		sample /= pi;
-
-		pixel.r = sample.r;
-		pixel.g = sample.g;
-		pixel.b = sample.b;
+		pixel = vec4(sample, 1.0f);
 
 		averageSgIrradianceSample += sample.r;
 	});
 	averageSgIrradianceSample /= irradianceSgImage.getPixelCount();
 	printf("Average SG irradiance: %f\n", averageSgIrradianceSample);
+
+	irradianceSgImage.writePng("irradianceSG.png");
 
 	/////////////////////////////////////////////////////////
 	// Generate reference convolved image using Monte Carlo
@@ -150,14 +180,12 @@ int main(int argc, char** argv)
 			vec2 sampleUv = sampleHammersley(sampleIt, mcSampleCount);
 			vec3 hemisphereDirection = sampleCosineHemisphere(sampleUv);
 			vec3 sampleDirection = basis * hemisphereDirection;
-			sample += function(sampleDirection);
+			sample += getSample(sampleDirection);
 		}
 
 		sample /= mcSampleCount;
 
-		pixel.r = sample.r;
-		pixel.g = sample.g;
-		pixel.b = sample.b;
+		pixel = vec4(sample, 1.0f);
 
 		mcIrradianceSampleAccumulator.local() += sample.r;
 	});
@@ -172,10 +200,12 @@ int main(int argc, char** argv)
 	// Write all images into a single combined PNG
 	////////////////////////////////////////////////
 
-	Image combinedImage(imageSize.x, imageSize.y*3);
-	combinedImage.paste(radianceImage, ivec2(0, imageSize.y*0));
-	combinedImage.paste(irradianceSgImage, ivec2(0, imageSize.y*1));
-	combinedImage.paste(irradianceMcImage, ivec2(0, imageSize.y*2));
+	Image combinedImage(imageSize.x, imageSize.y*4);
+	int offset = 0;
+	combinedImage.paste(radianceImage, ivec2(0, imageSize.y*offset++));
+	combinedImage.paste(radianceSgImage, ivec2(0, imageSize.y*offset++));
+	combinedImage.paste(irradianceSgImage, ivec2(0, imageSize.y*offset++));
+	combinedImage.paste(irradianceMcImage, ivec2(0, imageSize.y*offset++));
 	combinedImage.writePng("combined.png");
 
 	return 0;
