@@ -19,7 +19,6 @@ add_executable(Probulator
 	Image.cpp
 	Main.cpp
 	SphericalGaussian.cpp
-	SphericalHarmonics.cpp
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
