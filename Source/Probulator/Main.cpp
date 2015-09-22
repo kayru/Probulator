@@ -6,6 +6,14 @@
 
 using namespace Probulator;
 
+static vec4 computeAverage(Image& image)
+{
+	vec4 sum = vec4(0.0f);
+	image.forPixels([&](vec4& pixel){ sum += pixel; });
+	sum /= image.getPixelCount();
+	return sum;
+}
+
 int main(int argc, char** argv)
 {
 #if 1
@@ -65,7 +73,6 @@ int main(int argc, char** argv)
 	// Generate radiance image (not convolved)
 	////////////////////////////////////////////
 
-	float averageRadianceSample = 0.0f;
 	Image radianceImage(outputImageSize);
 	radianceImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
 	{
@@ -74,14 +81,11 @@ int main(int argc, char** argv)
 		vec3 sample = getSample(direction);
 
 		pixel = vec4(sample, 1.0f);
-
-		averageRadianceSample += sample.r;
 	});
 
 	radianceImage.writePng("radiance.png");
 
-	averageRadianceSample /= radianceImage.getPixelCount();	
-	printf("Average radiance: %f\n", averageRadianceSample);
+	printf("Average radiance: %f\n", computeAverage(radianceImage).r);
 
 	/////////////////////
 	// Project radiance
@@ -111,8 +115,6 @@ int main(int argc, char** argv)
 	// Generate reconstructed radiance images
 	///////////////////////////////////////////
 
-	float averageRadianceSgSample = 0.0f;
-	float averageRadianceShSample = 0.0f;
 	Image radianceSgImage(outputImageSize);
 	Image radianceShImage(outputImageSize);
 
@@ -133,26 +135,18 @@ int main(int argc, char** argv)
 
 		radianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
 		radianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
-
-		averageRadianceSgSample += sampleSg.r;
-		averageRadianceShSample += sampleSh.r;
 	});
 
 	radianceSgImage.writePng("radianceSG.png");
 	radianceShImage.writePng("radianceSH.png");
 
-	averageRadianceSgSample /= radianceSgImage.getPixelCount();
-	averageRadianceShSample /= radianceShImage.getPixelCount();
-
-	printf("Average SG radiance: %f\n", averageRadianceSgSample);
-	printf("Average SH radiance: %f\n", averageRadianceShSample);
+	printf("Average SG radiance: %f\n", computeAverage(radianceSgImage).r);
+	printf("Average SH radiance: %f\n", computeAverage(radianceShImage).r);
 
 	///////////////////////////////////////////////////////////////
 	// Generate irradiance image by convolving lighting with BRDF
 	///////////////////////////////////////////////////////////////
 
-	float averageSgIrradianceSample = 0.0f;
-	float averageShIrradianceSample = 0.0f;
 	Image irradianceSgImage(outputImageSize);
 	Image irradianceShImage(outputImageSize);
 
@@ -180,16 +174,10 @@ int main(int argc, char** argv)
 
 		vec3 sampleSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
 		irradianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
-
-		averageSgIrradianceSample += sampleSg.r;
-		averageShIrradianceSample += sampleSh.r;
 	});
 
-	averageSgIrradianceSample /= irradianceSgImage.getPixelCount();
-	averageShIrradianceSample /= irradianceSgImage.getPixelCount();
-
-	printf("Average SG irradiance: %f\n", averageSgIrradianceSample);
-	printf("Average SH irradiance: %f\n", averageShIrradianceSample);
+	printf("Average SG irradiance: %f\n", computeAverage(irradianceSgImage).r);
+	printf("Average SH irradiance: %f\n", computeAverage(irradianceShImage).r);
 
 	irradianceSgImage.writePng("irradianceSG.png");
 	irradianceShImage.writePng("irradianceSH.png");
@@ -198,7 +186,6 @@ int main(int argc, char** argv)
 	// Generate reference convolved image using Monte Carlo
 	/////////////////////////////////////////////////////////
 
-	Concurrency::combinable<float> mcIrradianceSampleAccumulator;
 	Image irradianceMcImage(outputImageSize);
 	irradianceMcImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
 	{
@@ -220,15 +207,11 @@ int main(int argc, char** argv)
 		sample /= mcSampleCount;
 
 		pixel = vec4(sample, 1.0f);
-
-		mcIrradianceSampleAccumulator.local() += sample.r;
 	});
 
 	irradianceMcImage.writePng("irradianceMC.png");
 
-	float averageMcIrradianceSample = mcIrradianceSampleAccumulator.combine([](float a, float b){return a + b;});
-	averageMcIrradianceSample /= irradianceMcImage.getPixelCount();
-	printf("Average MC irradiance: %f\n", averageMcIrradianceSample);
+	printf("Average MC irradiance: %f\n", computeAverage(irradianceMcImage).r);
 
 	////////////////////////////////////////////////
 	// Write all images into a single combined PNG
