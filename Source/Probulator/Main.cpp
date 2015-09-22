@@ -14,6 +14,34 @@ static vec4 computeAverage(Image& image)
 	return sum;
 }
 
+struct EnvmapSample
+{
+	vec3 direction;
+	vec3 value;
+};
+
+vec3 computeMeanSquareError(
+	const EnvmapSample* samples, u32 sampleCount,
+	const SphericalGaussian* lobes, u32 lobeCount)
+{
+	vec3 errorSquaredSum = vec3(0.0f);
+
+	float sampleWeight = 1.0f / sampleCount;
+	for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
+	{
+		const vec3& direction = samples[sampleIt].direction;
+		vec3 reconstructedValue = vec3(0.0f);
+		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
+		{
+			reconstructedValue += sgEvaluate(lobes[lobeIt], direction);
+		}
+		vec3 error = samples[sampleIt].value - reconstructedValue;
+		errorSquaredSum += error*error;
+	}
+
+	return errorSquaredSum / vec3((float)sampleCount);
+}
+
 int main(int argc, char** argv)
 {
 #if 1
@@ -91,9 +119,13 @@ int main(int argc, char** argv)
 	// Project radiance
 	/////////////////////
 
+	const u32 sampleCount = 20000;
+
+	std::vector<EnvmapSample> envmapSamples;
+	envmapSamples.reserve(sampleCount);
+
 	SphericalHarmonicsL2RGB shRadiance;
 
-	const u32 sampleCount = 20000;
 	for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
 	{
 		vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
@@ -109,6 +141,8 @@ int main(int argc, char** argv)
 		}
 
 		shAddWeighted(shRadiance, shEvaluateL2(direction), sample * (fourPi / sampleCount));
+
+		envmapSamples.push_back({direction, sample});
 	}
 
 	///////////////////////////////////////////
@@ -142,6 +176,9 @@ int main(int argc, char** argv)
 
 	printf("Average SG radiance: %f\n", computeAverage(radianceSgImage).r);
 	printf("Average SH radiance: %f\n", computeAverage(radianceShImage).r);
+
+	vec3 radianceSgMse = computeMeanSquareError(envmapSamples.data(), sampleCount, lobes, lobeCount);
+	printf("SG radiance projection MSE: %f\n", dot(radianceSgMse, vec3(1.0f / 3.0f)));
 
 	///////////////////////////////////////////////////////////////
 	// Generate irradiance image by convolving lighting with BRDF
