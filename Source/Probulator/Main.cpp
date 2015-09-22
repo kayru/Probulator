@@ -14,6 +14,14 @@ static vec4 computeAverage(Image& image)
 	return sum;
 }
 
+static float sgBasisNormalizationFactor(float lambda, u32 lobeCount)
+{
+	// TODO: there is no solid basis for this right now
+	float num = 4.0f * lambda * lambda;
+	float den = (1.0f - exp(-2.0f*lambda)) * lobeCount;
+	return num / den;
+}
+
 struct EnvmapSample
 {
 	vec3 direction;
@@ -95,8 +103,8 @@ int main(int argc, char** argv)
 		lobes[lobeIt].mu = vec3(0.0f);
 	}
 
-	const float sgNormFactor = 8.0f*pi*lambda / (sgIntegral(lambda)*lobeCount); // TODO: there is no solid basis for this right now
-	
+	const float sgNormFactor = sgBasisNormalizationFactor(lambda, lobeCount);
+
 	////////////////////////////////////////////
 	// Generate radiance image (not convolved)
 	////////////////////////////////////////////
