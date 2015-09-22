@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 		lobes[lobeIt].mu = vec3(0.0f);
 	}
 
-	const float sgNormFactor = fourPi / sgIntegral(lambda); // TODO: there is no solid basis for this right now
+	const float sgNormFactor = 8.0f*pi*lambda / (sgIntegral(lambda)*lobeCount); // TODO: there is no solid basis for this right now
 	
 	////////////////////////////////////////////
 	// Generate radiance image (not convolved)
