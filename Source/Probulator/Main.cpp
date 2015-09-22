@@ -3,8 +3,11 @@
 #include "Image.h"
 #include "SphericalGaussian.h"
 #include "SphericalHarmonics.h"
+#include "Variance.h"
 
 using namespace Probulator;
+
+// TODO: implement computeEnvmapAverage() for lat-long envmaps, taking pixel weights into account
 
 static vec4 computeAverage(Image& image)
 {
@@ -48,6 +51,31 @@ vec3 computeMeanSquareError(
 	}
 
 	return errorSquaredSum / vec3((float)sampleCount);
+}
+
+void computeMeanAndVariance(
+	const SphericalGaussian* lobes, u32 lobeCount,
+	u32 sampleCount,
+	vec3& outMean, vec3& outVariance)
+{
+	OnlineVariance<vec3> accumulator;
+
+	for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
+	{
+		vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
+		vec3 direction = sampleUniformSphere(sampleUv);
+
+		vec3 reconstructedValue = vec3(0.0f);
+		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
+		{
+			reconstructedValue += sgEvaluate(lobes[lobeIt], direction);
+		}
+
+		accumulator.addSample(reconstructedValue);
+	}
+
+	outMean = accumulator.mean;
+	outVariance = accumulator.getVariance();
 }
 
 int main(int argc, char** argv)
@@ -187,6 +215,12 @@ int main(int argc, char** argv)
 
 	vec3 radianceSgMse = computeMeanSquareError(envmapSamples.data(), sampleCount, lobes, lobeCount);
 	printf("SG radiance projection MSE: %f\n", dot(radianceSgMse, vec3(1.0f / 3.0f)));
+
+	vec3 radianceSgMean, radianceSgVariance;
+	computeMeanAndVariance(lobes, lobeCount, sampleCount, radianceSgMean, radianceSgVariance);
+
+	printf("SG radiance mean: %f\n", radianceSgMean.r);
+	printf("SG radiance variance : %f\n", radianceSgVariance.r);
 
 	///////////////////////////////////////////////////////////////
 	// Generate irradiance image by convolving lighting with BRDF
