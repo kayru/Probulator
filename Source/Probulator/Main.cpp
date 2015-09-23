@@ -5,6 +5,9 @@
 #include "SphericalHarmonics.h"
 #include "Variance.h"
 
+#include <random>
+#include <algorithm>
+
 using namespace Probulator;
 
 // TODO: implement computeEnvmapAverage() for lat-long envmaps, taking pixel weights into account
@@ -78,6 +81,156 @@ void computeMeanAndVariance(
 	outVariance = accumulator.getVariance();
 }
 
+typedef std::vector<SphericalGaussian> SgBasis;
+
+static float fitnessFunction(
+	const SgBasis& basis,
+	const std::vector<EnvmapSample>& samples,
+	const vec3& channelMask)
+{
+	vec3 mse = computeMeanSquareError(
+		samples.data(), (u32)samples.size(), 
+		basis.data(), (u32)basis.size());
+	float den = dot(mse, channelMask);
+	return den > 0.0f ? 1.0f / den : FLT_MAX;
+}
+
+static void mutate(SgBasis& basis, std::mt19937& rng)
+{
+	std::uniform_real_distribution<float> uniformDistribution(-1.0f, 1.0f);
+	std::uniform_int_distribution<u64> uid(0, basis.size()-1);
+
+	u64 i = uid(rng);
+	SphericalGaussian& lobe = basis[i];
+	float r = uniformDistribution(rng);
+	if (abs(r) < 0.01f)
+	{
+		lobe.mu += r;
+	}
+	else
+	{
+		lobe.mu += r * 0.1f;
+	}
+}
+
+static SgBasis crossOver(const SgBasis& a, const SgBasis& b, std::mt19937& rng)
+{
+	std::uniform_int_distribution<u64> ud(0, a.size());
+	u64 crossoverPoint = ud(rng);
+
+	SgBasis result;
+
+	for (u64 lobeIt = 0; lobeIt < crossoverPoint; ++lobeIt)
+	{
+		result.push_back(a[lobeIt]);
+	}
+	for (u64 lobeIt = crossoverPoint; lobeIt < a.size(); ++lobeIt)
+	{
+		result.push_back(b[lobeIt]);
+	}
+	
+	return result;
+}
+
+static SgBasis geneticAlgorithm(
+	const std::vector<EnvmapSample>& samples,
+	const std::vector<vec3>& lobeDirections,
+	float lambda,
+	u32 populationCount,
+	u32 generationCount,
+	u32 seed = 0)
+{
+	std::mt19937 rng(seed);
+	std::uniform_real_distribution<float> uniformDistribution;
+
+	std::vector<double> populationFitness;
+	
+	std::vector<SgBasis> population;
+	std::vector<SgBasis> nextPopulation;
+
+	population.reserve(populationCount);
+	nextPopulation.reserve(populationCount);
+
+	for (u32 populationIt = 0; populationIt < populationCount; ++populationIt)
+	{
+		SgBasis basis;
+		for (u64 lobeIt = 0; lobeIt < lobeDirections.size(); ++lobeIt)
+		{
+			SphericalGaussian lobe;
+			lobe.p = lobeDirections[lobeIt];
+			lobe.lambda = lambda;
+			lobe.mu = vec3(uniformDistribution(rng));
+			basis.push_back(lobe);
+		}
+		population.push_back(basis);
+	}
+
+	double bestFitness = 0.0f;
+
+	populationFitness.resize(populationCount);
+
+	for (u32 generationIt = 0; generationIt < generationCount; generationIt++)
+	{
+		parallelFor(0u, populationCount, [&](u32 basisIt)
+		{
+			const SgBasis& basis = population[basisIt];
+			float fitness = fitnessFunction(basis, samples, vec3(1.0f, 0.0f, 0.0f));
+			populationFitness[basisIt] = fitness;
+		});
+
+		std::vector<u32> sortedSolutionIndices(populationCount);
+		sortedSolutionIndices.reserve(populationCount);
+		for (u32 populationIt = 0; populationIt < populationCount; ++populationIt)
+		{
+			sortedSolutionIndices[populationIt] = populationIt;
+		}
+
+		std::sort(sortedSolutionIndices.begin(), sortedSolutionIndices.end(), [&](u32 a, u32 b)
+		{
+			return populationFitness[a] > populationFitness[b];
+		});
+
+		u32 bestSolutionIndex = sortedSolutionIndices[0];
+		double bestFitness = populationFitness[bestSolutionIndex];
+		printf("Generation %d best solution fitness: %f\n", generationIt, bestFitness);
+		
+		if (bestFitness == FLT_MAX)
+		{
+			return population[bestSolutionIndex];
+		}
+
+		nextPopulation.clear();
+		const u32 eliteCount = 15;
+		for (u32 eliteIt = 0; eliteIt < eliteCount; ++eliteIt)
+		{
+			nextPopulation.push_back(population[sortedSolutionIndices[eliteIt]]);
+		}
+
+		std::initializer_list<double> il(populationFitness.data(), populationFitness.data() + populationFitness.size());
+		std::discrete_distribution<int> dd(il);
+		while (nextPopulation.size() < populationCount)
+		{
+			int idA = dd(rng);
+			int idB = dd(rng);
+			const SgBasis& a = population[idA];
+			const SgBasis& b = population[idB];
+			SgBasis basis = crossOver(a, b, rng);
+			mutate(basis, rng);
+			nextPopulation.push_back(basis);
+		}
+
+		std::swap(population, nextPopulation);
+	}
+
+	u64 bestResultIndex = std::distance(
+		populationFitness.begin(), 
+		std::max_element(populationFitness.begin(), populationFitness.end()));
+
+	const SgBasis& result = population[bestResultIndex];
+
+	return result;
+}
+
 int main(int argc, char** argv)
 {
 #if 1
@@ -98,7 +251,7 @@ int main(int argc, char** argv)
 
 	auto getSample = [&](vec3 direction)
 	{
-		return (vec3)inputImage.sampleNearest(cartesianToLatLongTexcoord(direction));
+		return (vec3)inputImage.sampleNearest(cartesianToLatLongTexcoord(direction)).r;
 	};
 
 #else
@@ -108,7 +261,7 @@ int main(int argc, char** argv)
 		//return vec3(max(0.0f, -direction.z));
 		return 10.0f * vec3(pow(max(0.0f, -direction.z), 100.0f));
 		//return 200.0f * vec3(pow(max(0.0f, -direction.z), 100.0f));
-		//return vec3(1.0f);
+		//return vec3(0.5f);
 	};
 
 #endif
@@ -122,13 +275,15 @@ int main(int argc, char** argv)
 	const u32 lobeCount = 12; // <-- tweak this
 	const float lambda = 0.5f * lobeCount; // <-- tweak this; 
 
-	SphericalGaussian lobes[lobeCount];
+	SgBasis lobes(lobeCount);
 	std::vector<vec3> sgLobeDirections;
 	for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
 	{
-		lobes[lobeIt].p = sampleVogelsSphere(lobeIt, lobeCount);
+		sgLobeDirections.push_back(sampleVogelsSphere(lobeIt, lobeCount));
+
+		lobes[lobeIt].p = sgLobeDirections.back();
 		lobes[lobeIt].lambda = lambda;
-		lobes[lobeIt].mu = vec3(0.0f);
+		lobes[lobeIt].mu = vec3(0.0f);		
 	}
 
 	const float sgNormFactor = sgBasisNormalizationFactor(lambda, lobeCount);
@@ -181,11 +336,17 @@ int main(int argc, char** argv)
 		envmapSamples.push_back({direction, sample});
 	}
 
+	float adhocFitness = fitnessFunction(lobes, envmapSamples, vec3(1.0f, 0.0f, 0.0f));
+	printf("Adhoc basis fitness: %f\n", adhocFitness);
+
+	SgBasis optimizedBasis = geneticAlgorithm(envmapSamples, sgLobeDirections, lambda, 100, 200);
+
 	///////////////////////////////////////////
 	// Generate reconstructed radiance images
 	///////////////////////////////////////////
 
 	Image radianceSgImage(outputImageSize);
+	Image radianceSgGaImage(outputImageSize);
 	Image radianceShImage(outputImageSize);
 
 	radianceSgImage.forPixels2D([&](vec4&, ivec2 pixelPos)
@@ -200,24 +361,34 @@ int main(int argc, char** argv)
 			sampleSg += sgEvaluate(sg, direction);
 		}
 
+		vec3 sampleSgGa = vec3(0.0f);
+		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
+		{
+			const SphericalGaussian& sg = optimizedBasis[lobeIt];
+			sampleSgGa += sgEvaluate(sg, direction);
+		}
+
 		SphericalHarmonicsL2 directionSh = shEvaluateL2(direction);
 		vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
 
+		radianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
 		radianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
 		radianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
 	});
 
+	radianceSgGaImage.writePng("radianceSGGA.png");
 	radianceSgImage.writePng("radianceSG.png");
 	radianceShImage.writePng("radianceSH.png");
 
+	printf("Average SGGA radiance: %f\n", computeAverage(radianceSgGaImage).r);
 	printf("Average SG radiance: %f\n", computeAverage(radianceSgImage).r);
 	printf("Average SH radiance: %f\n", computeAverage(radianceShImage).r);
 
-	vec3 radianceSgMse = computeMeanSquareError(envmapSamples.data(), sampleCount, lobes, lobeCount);
+	vec3 radianceSgMse = computeMeanSquareError(envmapSamples.data(), sampleCount, lobes.data(), lobeCount);
 	printf("SG radiance projection MSE: %f\n", dot(radianceSgMse, vec3(1.0f / 3.0f)));
 
 	vec3 radianceSgMean, radianceSgVariance;
-	computeMeanAndVariance(lobes, lobeCount, sampleCount, radianceSgMean, radianceSgVariance);
+	computeMeanAndVariance(lobes.data(), lobeCount, sampleCount, radianceSgMean, radianceSgVariance);
 
 	printf("SG radiance mean: %f\n", radianceSgMean.r);
 	printf("SG radiance variance : %f\n", radianceSgVariance.r);
@@ -226,13 +397,18 @@ int main(int argc, char** argv)
 	// Generate irradiance image by convolving lighting with BRDF
 	///////////////////////////////////////////////////////////////
 
+	Image irradianceSgGaImage(outputImageSize);
 	Image irradianceSgImage(outputImageSize);
 	Image irradianceShImage(outputImageSize);
 
 	//SphericalGaussian brdf = sgCosineLobe();
 	SphericalGaussian brdf;
-	brdf.lambda = 6.5f; // Chosen arbitrarily through experimentation
+	brdf.lambda = 8.5f; // Chosen arbitrarily through experimentation
 	brdf.mu = vec3(sgFindMu(brdf.lambda, pi));
+
+	SphericalGaussian brdfGa;
+	brdfGa.lambda = 3.5f; // Chosen arbitrarily through experimentation
+	brdfGa.mu = vec3(sgFindMu(brdfGa.lambda, pi));
 
 	irradianceSgImage.forPixels2D([&](vec4&, ivec2 pixelPos)
 	{
@@ -251,6 +427,18 @@ int main(int argc, char** argv)
 		sampleSg /= pi;
 		irradianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
 
+		brdfGa.p = direction;
+
+		vec3 sampleSgGa = vec3(0.0f);
+		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
+		{
+			const SphericalGaussian& sg = optimizedBasis[lobeIt];
+			sampleSgGa += sgDot(sg, brdfGa);
+		}
+
+		sampleSgGa /= pi;
+		irradianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
+
 		vec3 sampleSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
 		irradianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
 	});
@@ -258,6 +446,7 @@ int main(int argc, char** argv)
 	printf("Average SG irradiance: %f\n", computeAverage(irradianceSgImage).r);
 	printf("Average SH irradiance: %f\n", computeAverage(irradianceShImage).r);
 
+	irradianceSgGaImage.writePng("irradianceSGGA.png");
 	irradianceSgImage.writePng("irradianceSG.png");
 	irradianceShImage.writePng("irradianceSH.png");
 
@@ -296,15 +485,17 @@ int main(int argc, char** argv)
 	// Write all images into a single combined PNG
 	////////////////////////////////////////////////
 
-	Image combinedImage(outputImageSize.x*3, outputImageSize.y*2);
+	Image combinedImage(outputImageSize.x*4, outputImageSize.y*2);
 
 	combinedImage.paste(radianceImage, outputImageSize * ivec2(0,0));
 	combinedImage.paste(radianceShImage, outputImageSize * ivec2(1, 0));
-	combinedImage.paste(radianceSgImage, outputImageSize * ivec2(2, 0));
+	combinedImage.paste(radianceSgGaImage, outputImageSize * ivec2(2, 0));
+	combinedImage.paste(radianceSgImage, outputImageSize * ivec2(3, 0));
 
 	combinedImage.paste(irradianceMcImage, outputImageSize * ivec2(0, 1));
 	combinedImage.paste(irradianceShImage, outputImageSize * ivec2(1, 1));
-	combinedImage.paste(irradianceSgImage, outputImageSize * ivec2(2, 1));
+	combinedImage.paste(irradianceSgGaImage, outputImageSize * ivec2(2, 1));
+	combinedImage.paste(irradianceSgImage, outputImageSize * ivec2(3, 1));
 	
 	combinedImage.writePng("combined.png");
 
