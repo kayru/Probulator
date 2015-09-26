@@ -1,6 +1,6 @@
 if(CMAKE_COMPILER_IS_GNUCXX)
 	add_definitions(-std=c++11)
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 	add_definitions(-std=c++11 -stdlib=libc++)
 endif()
 
@@ -11,14 +11,20 @@ endif()
 
 add_executable(Probulator
 	Common.h
+	Image.cpp
 	Image.h
+	Main.cpp
 	Math.h
+	RadianceSample.h
+	SGBasis.cpp
+	SGBasis.h
+	SGFitGeneticAlgorithm.cpp
+	SGFitGeneticAlgorithm.h
+	SphericalGaussian.cpp
 	SphericalGaussian.h
 	SphericalHarmonics.h
 	Thread.h
-	Image.cpp
-	Main.cpp
-	SphericalGaussian.cpp
+	Variance.h
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
