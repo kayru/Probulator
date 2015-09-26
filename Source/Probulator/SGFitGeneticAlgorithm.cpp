@@ -77,7 +77,7 @@ namespace Probulator
 
 		const float mutationRate = 0.05f;
 		const float mutationSigma = 0.025f;
-		const u32 eliteCount = 5;
+		const u32 eliteCount = 1;
 
 		population.reserve(populationCount);
 		nextPopulation.reserve(populationCount);

@@ -20,6 +20,8 @@ add_executable(Probulator
 	SGBasis.h
 	SGFitGeneticAlgorithm.cpp
 	SGFitGeneticAlgorithm.h
+	SGFitLeastSquares.cpp
+	SGFitLeastSquares.h
 	SphericalGaussian.cpp
 	SphericalGaussian.h
 	SphericalHarmonics.h
