@@ -127,7 +127,7 @@ int main(int argc, char** argv)
 	}
 
 	SgBasis lobesLs = sgFitLeastSquares(lobes, envmapSamples, lambda);
-	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, lambda, 100, 1000, 0, true);
+	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, lambda, 20, 1000, 0, true);
 
 	vec3 mseAdhoc = sgBasisMeanSquareError(lobes, envmapSamples);
 	printf("Ad-hoc basis MSE: %f\n", dot(mseAdhoc, vec3(1.0f / 3.0f)));
@@ -190,8 +190,12 @@ int main(int argc, char** argv)
 	brdf.mu = vec3(sgFindMu(brdf.lambda, pi));
 
 	SphericalGaussian brdfGa;
-	brdfGa.lambda = 3.5f; // Chosen arbitrarily through experimentation
+	brdfGa.lambda = 3.0f; // Chosen arbitrarily through experimentation
 	brdfGa.mu = vec3(sgFindMu(brdfGa.lambda, pi));
+
+	SphericalGaussian brdfLs;
+	brdfLs.lambda = 3.0f; // Chosen arbitrarily through experimentation
+	brdfLs.mu = vec3(sgFindMu(brdfGa.lambda, pi));
 
 	irradianceSgImage.forPixels2D([&](vec4&, ivec2 pixelPos)
 	{
@@ -200,6 +204,7 @@ int main(int argc, char** argv)
 
 		brdf.p = direction;
 		brdfGa.p = direction;
+		brdfLs.p = direction;
 		
 		vec3 sampleSg = sgBasisDot(lobes, brdf) / pi;
 		irradianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
@@ -207,7 +212,7 @@ int main(int argc, char** argv)
 		vec3 sampleSgGa = sgBasisDot(lobesGa, brdfGa) / pi;
 		irradianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
 
-		vec3 sampleSgLs = sgBasisDot(lobesLs, brdfGa) / pi;
+		vec3 sampleSgLs = sgBasisDot(lobesLs, brdfLs) / pi;
 		irradianceSgLsImage.at(pixelPos) = vec4(sampleSgLs, 1.0f);
 
 		vec3 sampleSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
