@@ -3,7 +3,7 @@
 
 namespace Probulator
 {
-	SgBasis sgFitLeastSquares(const SgBasis& basis, const std::vector<RadianceSample>& samples, float lambda)
+	SgBasis sgFitLeastSquares(const SgBasis& basis, const std::vector<RadianceSample>& samples)
 	{
 		using namespace Eigen;
 		SgBasis result = basis;
@@ -14,7 +14,7 @@ namespace Probulator
 		{
 			for (u64 lobeIt = 0; lobeIt < basis.size(); ++lobeIt)
 			{
-				A(sampleIt, lobeIt) = sgEvaluate(basis[lobeIt].p, lambda, samples[sampleIt].direction);
+				A(sampleIt, lobeIt) = sgEvaluate(basis[lobeIt].p, basis[lobeIt].lambda, samples[sampleIt].direction);
 			}
 		}
 

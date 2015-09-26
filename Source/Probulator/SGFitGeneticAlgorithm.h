@@ -8,7 +8,6 @@ namespace Probulator
 	SgBasis sgFitGeneticAlgorithm(
 		const SgBasis& basis,
 		const std::vector<RadianceSample>& samples,
-		float lambda,
 		u32 populationCount,
 		u32 generationCount,
 		u32 seed = 0,

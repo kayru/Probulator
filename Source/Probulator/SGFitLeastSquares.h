@@ -7,6 +7,5 @@ namespace Probulator
 {
 	SgBasis sgFitLeastSquares(
 		const SgBasis& basis,
-		const std::vector<RadianceSample>& samples,
-		float lambda);
+		const std::vector<RadianceSample>& samples);
 }

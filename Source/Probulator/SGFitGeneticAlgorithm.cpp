@@ -36,9 +36,13 @@ namespace Probulator
 			{
 				if (randomFloat(rng) <= mutationRate)
 				{
-					float delta = normalDistribution(rng);
-					lobe.mu[channelIt] += delta;
+					lobe.mu[channelIt] += normalDistribution(rng);
 				}
+			}
+
+			if (randomFloat(rng) <= mutationRate)
+			{
+				lobe.lambda += normalDistribution(rng);
 			}
 		}
 	}
@@ -64,7 +68,6 @@ namespace Probulator
 	SgBasis sgFitGeneticAlgorithm(
 		const SgBasis& basis,
 		const std::vector<RadianceSample>& samples,
-		float lambda,
 		u32 populationCount,
 		u32 generationCount,
 		u32 seed,

@@ -126,8 +126,8 @@ int main(int argc, char** argv)
 		envmapSamples.push_back({direction, sample});
 	}
 
-	SgBasis lobesLs = sgFitLeastSquares(lobes, envmapSamples, lambda);
-	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, lambda, 20, 1000, 0, true);
+	SgBasis lobesLs = sgFitLeastSquares(lobes, envmapSamples);
+	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, 50, 2000, 0, true);
 
 	vec3 mseAdhoc = sgBasisMeanSquareError(lobes, envmapSamples);
 	printf("Ad-hoc basis MSE: %f\n", dot(mseAdhoc, vec3(1.0f / 3.0f)));
