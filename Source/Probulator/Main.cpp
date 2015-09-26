@@ -159,7 +159,7 @@ int main(int argc, char** argv)
 		SphericalHarmonicsL2 directionSh = shEvaluateL2(direction);
 		vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
 
-		radianceSgLsImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
+		radianceSgLsImage.at(pixelPos) = vec4(sampleSgLs, 1.0f);
 		radianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
 		radianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
 		radianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
