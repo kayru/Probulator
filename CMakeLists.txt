@@ -7,6 +7,7 @@ if(MSVC)
 		-D_CRT_SECURE_NO_WARNINGS
 		-D_CRT_SECURE_NO_DEPRECATE
 	)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Zo")
 endif()
 
 add_subdirectory(Source)
