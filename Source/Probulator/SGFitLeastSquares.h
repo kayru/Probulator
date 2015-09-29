@@ -8,4 +8,7 @@ namespace Probulator
 	SgBasis sgFitLeastSquares(
 		const SgBasis& basis,
 		const std::vector<RadianceSample>& samples);
+	SgBasis sgFitNNLeastSquares(
+		const SgBasis& basis,
+		const std::vector<RadianceSample>& samples);
 }

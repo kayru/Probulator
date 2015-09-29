@@ -127,6 +127,7 @@ int main(int argc, char** argv)
 	}
 
 	SgBasis lobesLs = sgFitLeastSquares(lobes, envmapSamples);
+	SgBasis lobesNNLs = sgFitNNLeastSquares(lobes, envmapSamples);
 	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, 50, 2000, 0, true);
 
 	vec3 mseAdhoc = sgBasisMeanSquareError(lobes, envmapSamples);
@@ -136,7 +137,10 @@ int main(int argc, char** argv)
 	printf("GA basis MSE: %f\n", dot(mseGa, vec3(1.0f / 3.0f)));
 
 	vec3 mseLs = sgBasisMeanSquareError(lobesLs, envmapSamples);
-	printf("LS basis MSE: %f\n", dot(mseGa, vec3(1.0f / 3.0f)));
+	printf("LS basis MSE: %f\n", dot(mseLs, vec3(1.0f / 3.0f)));
+
+	vec3 mseNNLs = sgBasisMeanSquareError(lobesNNLs, envmapSamples);
+	printf("NNLS basis MSE: %f\n", dot(mseNNLs, vec3(1.0f / 3.0f)));
 
 	///////////////////////////////////////////
 	// Generate reconstructed radiance images
@@ -144,6 +148,7 @@ int main(int argc, char** argv)
 
 	Image radianceSgImage(outputImageSize);
 	Image radianceSgLsImage(outputImageSize);
+	Image radianceSgNNLsImage(outputImageSize);
 	Image radianceSgGaImage(outputImageSize);
 	Image radianceShImage(outputImageSize);
 
@@ -155,22 +160,26 @@ int main(int argc, char** argv)
 		vec3 sampleSg = sgBasisEvaluate(lobes, direction);
 		vec3 sampleSgGa = sgBasisEvaluate(lobesGa, direction);
 		vec3 sampleSgLs = sgBasisEvaluate(lobesLs, direction);
+		vec3 sampleSgNNLs = sgBasisEvaluate(lobesNNLs, direction);
 
 		SphericalHarmonicsL2 directionSh = shEvaluateL2(direction);
 		vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
 
 		radianceSgLsImage.at(pixelPos) = vec4(sampleSgLs, 1.0f);
+		radianceSgNNLsImage.at(pixelPos) = vec4(sampleSgNNLs, 1.0f);
 		radianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
 		radianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
 		radianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
 	});
 
 	radianceSgLsImage.writePng("radianceSGLS.png");
+	radianceSgNNLsImage.writePng("radianceSGNNLS.png");
 	radianceSgGaImage.writePng("radianceSGGA.png");
 	radianceSgImage.writePng("radianceSG.png");
 	radianceShImage.writePng("radianceSH.png");
 
 	printf("Average SGLS radiance: %f\n", computeAverage(radianceSgLsImage).r);
+	printf("Average SGNNLS radiance: %f\n", computeAverage(radianceSgNNLsImage).r);
 	printf("Average SGGA radiance: %f\n", computeAverage(radianceSgGaImage).r);
 	printf("Average SG radiance: %f\n", computeAverage(radianceSgImage).r);
 	printf("Average SH radiance: %f\n", computeAverage(radianceShImage).r);
@@ -181,6 +190,7 @@ int main(int argc, char** argv)
 
 	Image irradianceSgGaImage(outputImageSize);
 	Image irradianceSgLsImage(outputImageSize);
+	Image irradianceSgNNLsImage(outputImageSize);
 	Image irradianceSgImage(outputImageSize);
 	Image irradianceShImage(outputImageSize);
 
@@ -195,7 +205,11 @@ int main(int argc, char** argv)
 
 	SphericalGaussian brdfLs;
 	brdfLs.lambda = 3.0f; // Chosen arbitrarily through experimentation
-	brdfLs.mu = vec3(sgFindMu(brdfGa.lambda, pi));
+	brdfLs.mu = vec3(sgFindMu(brdfLs.lambda, pi));
+
+	SphericalGaussian brdfNNLs;
+	brdfNNLs.lambda = 3.0f; // Chosen arbitrarily through experimentation
+	brdfNNLs.mu = vec3(sgFindMu(brdfNNLs.lambda, pi));
 
 	irradianceSgImage.forPixels2D([&](vec4&, ivec2 pixelPos)
 	{
@@ -205,6 +219,7 @@ int main(int argc, char** argv)
 		brdf.p = direction;
 		brdfGa.p = direction;
 		brdfLs.p = direction;
+		brdfNNLs.p = direction;
 		
 		vec3 sampleSg = sgBasisDot(lobes, brdf) / pi;
 		irradianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
@@ -215,6 +230,9 @@ int main(int argc, char** argv)
 		vec3 sampleSgLs = sgBasisDot(lobesLs, brdfLs) / pi;
 		irradianceSgLsImage.at(pixelPos) = vec4(sampleSgLs, 1.0f);
 
+		vec3 sampleSgNNLs = sgBasisDot(lobesNNLs, brdfNNLs) / pi;
+		irradianceSgNNLsImage.at(pixelPos) = vec4(sampleSgNNLs, 1.0f);
+
 		vec3 sampleSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
 		irradianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
 	});
@@ -223,6 +241,7 @@ int main(int argc, char** argv)
 	printf("Average SH irradiance: %f\n", computeAverage(irradianceShImage).r);
 
 	irradianceSgLsImage.writePng("irradianceSGLS.png");
+	irradianceSgNNLsImage.writePng("irradianceSGNNLS.png");
 	irradianceSgGaImage.writePng("irradianceSGGA.png");
 	irradianceSgImage.writePng("irradianceSG.png");
 	irradianceShImage.writePng("irradianceSH.png");
@@ -262,22 +281,23 @@ int main(int argc, char** argv)
 	// Write all images into a single combined PNG
 	////////////////////////////////////////////////
 
-	Image combinedImage(outputImageSize.x*5, outputImageSize.y*2);
+	Image combinedImage(outputImageSize.x*6, outputImageSize.y*2);
 
 	combinedImage.paste(radianceImage, outputImageSize * ivec2(0,0));
 	combinedImage.paste(radianceShImage, outputImageSize * ivec2(1, 0));
 	combinedImage.paste(radianceSgGaImage, outputImageSize * ivec2(2, 0));
 	combinedImage.paste(radianceSgLsImage, outputImageSize * ivec2(3, 0));
-	combinedImage.paste(radianceSgImage, outputImageSize * ivec2(4, 0));
+	combinedImage.paste(radianceSgNNLsImage, outputImageSize * ivec2(4, 0));
+	combinedImage.paste(radianceSgImage, outputImageSize * ivec2(5, 0));
 
 	combinedImage.paste(irradianceMcImage, outputImageSize * ivec2(0, 1));
 	combinedImage.paste(irradianceShImage, outputImageSize * ivec2(1, 1));
 	combinedImage.paste(irradianceSgGaImage, outputImageSize * ivec2(2, 1));
 	combinedImage.paste(irradianceSgLsImage, outputImageSize * ivec2(3, 1));
-	combinedImage.paste(irradianceSgImage, outputImageSize * ivec2(4, 1));
+	combinedImage.paste(irradianceSgNNLsImage, outputImageSize * ivec2(4, 1));
+	combinedImage.paste(irradianceSgImage, outputImageSize * ivec2(5, 1));
 	
 	combinedImage.writePng("combined.png");
 
 	return 0;
 }
-
