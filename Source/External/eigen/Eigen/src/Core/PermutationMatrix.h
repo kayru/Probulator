@@ -324,7 +324,7 @@ class PermutationMatrix : public PermutationBase<PermutationMatrix<SizeAtCompile
 
     /** Constructs an uninitialized permutation matrix of given size.
       */
-    inline PermutationMatrix(int size) : m_indices(size)
+    inline PermutationMatrix(Index size) : m_indices(size)
     {}
 
     /** Copy constructor. */
