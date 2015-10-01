@@ -114,7 +114,7 @@ namespace Probulator
 		// From Peter-Pike Sloan's Stupid SH Tricks
 		// http://www.ppsloan.org/publications/StupidSH36.pdf
 
-		auto scale = [lambda](u32 L) { return 1.0f / (1.0f + lambda * L * L * (L + 1.0f) * (L + 1.0f)); };
+		auto scale = [lambda](u32 l) { return 1.0f / (1.0f + lambda * l * l * (l + 1.0f) * (l + 1.0f)); };
 
 		sh[0] *= scale(0);
 

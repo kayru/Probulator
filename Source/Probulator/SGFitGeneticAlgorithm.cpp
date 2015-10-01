@@ -143,8 +143,12 @@ namespace Probulator
 				nextPopulation.push_back(population[sortedSolutionIndices[eliteIt]]);
 			}
 
+#ifdef _MSC_VER
 			std::initializer_list<double> il(populationFitness.data(), populationFitness.data() + populationFitness.size());
 			std::discrete_distribution<u32> dd(il);
+#else
+			std::discrete_distribution<u32> dd(populationFitness.begin(), populationFitness.end());
+#endif
 
 			while (nextPopulation.size() < populationCount)
 			{
