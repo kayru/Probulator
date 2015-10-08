@@ -9,8 +9,16 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	include_directories(${tbbinclude})
 endif()
 
+find_package(OpenCL REQUIRED)
+
+include_directories(
+	${OpenCL_INCLUDE_DIRS}
+)
+
 add_executable(Probulator
 	Common.h
+	Compute.h
+	Compute.cpp
 	Image.cpp
 	Image.h
 	Main.cpp
@@ -27,6 +35,10 @@ add_executable(Probulator
 	SphericalHarmonics.h
 	Thread.h
 	Variance.h
+)
+
+target_link_libraries(Probulator
+	${OpenCL_LIBRARIES}
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
