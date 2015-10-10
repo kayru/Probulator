@@ -19,6 +19,7 @@ namespace Probulator
 		std::string name;
 		cl_bool available;
 		cl_device_type type;
+		cl_ulong localMemSize;
 	};
 
 	class ComputeKernel

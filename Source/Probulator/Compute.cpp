@@ -67,6 +67,7 @@ namespace Probulator
 				getInfo(id, CL_DEVICE_NAME, device.name);
 				getInfo(id, CL_DEVICE_AVAILABLE, device.available);
 				getInfo(id, CL_DEVICE_TYPE, device.type);
+				getInfo(id, CL_DEVICE_LOCAL_MEM_SIZE, device.localMemSize);
 			}
 
 			const cl_context_properties contextProperties[] =
