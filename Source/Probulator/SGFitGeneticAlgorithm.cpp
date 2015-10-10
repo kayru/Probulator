@@ -38,32 +38,48 @@ vec3 sgEvaluate(SphericalGaussian sg, vec3 v)
 
 __kernel void computeErrors(
 	__global SphericalGaussian* lobes,
-	const int lobeCount, // lobes per basis
-	const int basisCount, // how many bases in total
+	const int lobeCount,
 	__global RadianceSample* radianceSamples,
 	const int radianceSampleCount,
-	__global float* basisErrors)
+	__global float* errors)
 {
-	int basisIt = get_global_id(0);
-	float errorSquaredSum = 0.0;
+	int sampleIt = get_global_id(0);
+	int basisIndex = get_global_id(1);
+		
 	vec3 rgbLuminance = { 0.2126, 0.7152, 0.0722 };
-	for (int sampleIt=0; sampleIt<radianceSampleCount; ++sampleIt)
+	
+	RadianceSample sample = radianceSamples[sampleIt];
+	
+	vec3 sampleDirection = {sample.dX, sample.dY, sample.dZ};
+	vec3 sampleValue = {sample.r, sample.g, sample.b};
+	
+	vec3 reconstructedValue = 0.0;
+	
+	for (int lobeIt=0; lobeIt<lobeCount; ++lobeIt)
 	{
-		RadianceSample sample = radianceSamples[sampleIt];
-		vec3 reconstructedValue = 0.0;
-		for (int lobeIt=0; lobeIt<lobeCount; ++lobeIt)
-		{			
-			SphericalGaussian lobe = lobes[lobeCount*basisIt + lobeIt];
-			vec3 direction = {sample.dX, sample.dY, sample.dZ};
-			reconstructedValue += sgEvaluate(lobe, direction);
-		}
-		vec3 sampleValue = {sample.r, sample.g, sample.b};
-		vec3 error = sampleValue - reconstructedValue;
-		errorSquaredSum += dot(error*error, rgbLuminance);
+		SphericalGaussian lobe = lobes[basisIndex*lobeCount + lobeIt];
+		reconstructedValue += sgEvaluate(lobe, sampleDirection);
 	}
 	
-	float mse = errorSquaredSum / radianceSampleCount;
-	basisErrors[basisIt] = mse;
+	vec3 error = sampleValue - reconstructedValue;
+	float errorSquared = dot(error*error, rgbLuminance);
+	
+	errors[basisIndex*radianceSampleCount + sampleIt] = errorSquared / radianceSampleCount;
+}
+
+__kernel void naiveReduceSum(
+	__global float* input,
+	const int count,
+	__global float* output,
+	const int outputIndex
+)
+{
+	float sum = 0.0f;
+	for(int i=0; i<count;++i)
+	{
+		sum += input[i];
+	}
+	output[outputIndex] = sum;
 }
 )";
 
@@ -137,6 +153,7 @@ namespace Probulator
 		bool verbose)
 	{
 		ComputeKernel errorKernel(g_computeCode, "computeErrors");
+		ComputeKernel reduceSumKernel(g_computeCode, "naiveReduceSum");
 
 		std::mt19937 rng(seed);
 
@@ -179,7 +196,14 @@ namespace Probulator
 			0, nullptr, nullptr);
 		assert(clError == CL_SUCCESS);
 
+		std::vector<float> errorBufferCpu(samples.size()*populationCount);
 		cl_mem errorBuffer = clCreateBuffer(
+			g_computeContext, CL_MEM_WRITE_ONLY,
+			sizeof(float)*errorBufferCpu.size(),
+			nullptr, &clError);
+		assert(clError == CL_SUCCESS);
+
+		cl_mem populationErrorBuffer = clCreateBuffer(
 			g_computeContext, CL_MEM_WRITE_ONLY,
 			sizeof(float)*populationCount,
 			nullptr, &clError);
@@ -195,7 +219,7 @@ namespace Probulator
 				populationError[basisIt] = errorFunction(population[basisIt], samples);
 			});
 #else
-			for (u32 basisIt = 0; basisIt < population.size(); ++basisIt)
+			for (u32 basisIt = 0; basisIt < populationCount; ++basisIt)
 			{
 				size_t writeSize = sizeof(SphericalGaussian)*basis.size();
 				size_t writeOffset = writeSize*basisIt;
@@ -208,22 +232,38 @@ namespace Probulator
 			const int lobeCount = (int)basis.size();
 			const int basisCount = (int)population.size();
 			const int radianceSampleCount = (int)samples.size();
-			clSetKernelArg(errorKernel.getKernel(), 0, sizeof(populationBuffer), &populationBuffer);
-			clSetKernelArg(errorKernel.getKernel(), 1, sizeof(lobeCount), &lobeCount);
-			clSetKernelArg(errorKernel.getKernel(), 2, sizeof(basisCount), &basisCount);
-			clSetKernelArg(errorKernel.getKernel(), 3, sizeof(radianceBuffer), &radianceBuffer);
-			clSetKernelArg(errorKernel.getKernel(), 4, sizeof(radianceSampleCount), &radianceSampleCount);
-			clSetKernelArg(errorKernel.getKernel(), 5, sizeof(errorBuffer), &errorBuffer);
+			int paramId = 0;
+			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(populationBuffer), &populationBuffer);
+			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(lobeCount), &lobeCount);
+			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(radianceBuffer), &radianceBuffer);
+			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(radianceSampleCount), &radianceSampleCount);
+			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(errorBuffer), &errorBuffer);
 
-			size_t globalSize = population.size();
-			clError = clEnqueueNDRangeKernel(g_computeQueue, errorKernel.getKernel(), 1, nullptr, &globalSize, nullptr, 0, nullptr, nullptr);
+			size_t globalSize[2] =
+			{
+				samples.size(),
+				population.size()
+			};
+
+			clError = clEnqueueNDRangeKernel(g_computeQueue, errorKernel.getKernel(), 2, nullptr, globalSize, nullptr, 0, nullptr, nullptr);
 			assert(clError == CL_SUCCESS);
 
 			clError = clEnqueueReadBuffer(g_computeQueue, errorBuffer, CL_FALSE, 0,
-				sizeof(float)*populationCount, populationError.data(),
+				sizeof(float)*errorBufferCpu.size(), errorBufferCpu.data(),
 				0, nullptr, nullptr);
 			assert(clError == CL_SUCCESS);
 			clFinish(g_computeQueue);
+
+			parallelFor(0u, populationCount, [&](u32 basisIt)
+			{
+				const float* data = &errorBufferCpu[samples.size()*basisIt];
+				float sum = 0.0f;
+				for (size_t sampleIt = 0; sampleIt < samples.size(); ++sampleIt)
+				{
+					sum += data[sampleIt];
+				}
+				populationError[basisIt] = sum;
+			});
 #endif
 
 			for (u32 populationIt = 0; populationIt < populationCount; ++populationIt)
