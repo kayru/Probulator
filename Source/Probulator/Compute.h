@@ -25,7 +25,7 @@ namespace Probulator
 	{
 	public:
 
-		ComputeKernel(const char* code, const char* name, cl_device_id deviceId);
+		ComputeKernel(const char* code, const char* name);
 		~ComputeKernel();
 
 		cl_kernel getKernel() const { return m_kernel; }
@@ -38,4 +38,7 @@ namespace Probulator
 		size_t m_workGroupSize = 0;
 	};
 
+	extern cl_device_id g_computeDevice;
+	extern cl_context g_computeContext;
+	extern cl_command_queue g_computeQueue;
 }

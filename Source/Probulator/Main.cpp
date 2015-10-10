@@ -8,6 +8,7 @@
 #include "RadianceSample.h"
 #include "SGFitGeneticAlgorithm.h"
 #include "SGFitLeastSquares.h"
+#include "Compute.h"
 
 using namespace Probulator;
 
@@ -126,9 +127,9 @@ int main(int argc, char** argv)
 		envmapSamples.push_back({direction, sample});
 	}
 
+	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, 50, 2000, 0, true);
 	SgBasis lobesLs = sgFitLeastSquares(lobes, envmapSamples);
 	SgBasis lobesNNLs = sgFitNNLeastSquares(lobes, envmapSamples);
-	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, 50, 2000, 0, true);
 
 	vec3 mseAdhoc = sgBasisMeanSquareError(lobes, envmapSamples);
 	printf("Ad-hoc basis MSE: %f\n", dot(mseAdhoc, vec3(1.0f / 3.0f)));
