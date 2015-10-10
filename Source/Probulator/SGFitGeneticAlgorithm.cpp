@@ -8,8 +8,6 @@
 
 static const char* g_computeCode =
 R"(
-#define vec3 float3
-
 typedef struct
 {
 	float pX, pY, pZ; // lobe axis
@@ -23,16 +21,16 @@ typedef struct
 	float r, g, b;
 } RadianceSample;
 
-float sgEvaluateEx(vec3 p, float lambda, vec3 v)
+float sgEvaluateEx(float3 p, float lambda, float3 v)
 {
 	float dp = dot(v, p);
 	return exp(lambda * (dp - 1.0));
 }
 
-vec3 sgEvaluate(SphericalGaussian sg, vec3 v)
+float3 sgEvaluate(SphericalGaussian sg, float3 v)
 {
-	vec3 mu = {sg.muX, sg.muY, sg.muZ};
-	vec3 p = {sg.pX, sg.pY, sg.pZ};
+	float3 mu = {sg.muX, sg.muY, sg.muZ};
+	float3 p = {sg.pX, sg.pY, sg.pZ};
 	return mu * sgEvaluateEx(p, sg.lambda, v);
 }
 
@@ -46,14 +44,14 @@ __kernel void computeErrors(
 	int sampleIt = get_global_id(0);
 	int basisIndex = get_global_id(1);
 		
-	vec3 rgbLuminance = { 0.2126, 0.7152, 0.0722 };
+	float3 rgbLuminance = { 0.2126, 0.7152, 0.0722 };
 	
 	RadianceSample sample = radianceSamples[sampleIt];
 	
-	vec3 sampleDirection = {sample.dX, sample.dY, sample.dZ};
-	vec3 sampleValue = {sample.r, sample.g, sample.b};
+	float3 sampleDirection = {sample.dX, sample.dY, sample.dZ};
+	float3 sampleValue = {sample.r, sample.g, sample.b};
 	
-	vec3 reconstructedValue = 0.0;
+	float3 reconstructedValue = 0.0;
 	
 	for (int lobeIt=0; lobeIt<lobeCount; ++lobeIt)
 	{
@@ -61,7 +59,7 @@ __kernel void computeErrors(
 		reconstructedValue += sgEvaluate(lobe, sampleDirection);
 	}
 	
-	vec3 error = sampleValue - reconstructedValue;
+	float3 error = sampleValue - reconstructedValue;
 	float errorSquared = dot(error*error, rgbLuminance);
 	
 	errors[basisIndex*radianceSampleCount + sampleIt] = errorSquared / radianceSampleCount;
@@ -293,7 +291,7 @@ namespace Probulator
 				populationFitness[populationIt] = 0.000001 + x * populationCount;
 			}
 
-			if (verbose)
+			if (verbose && generationIt%50 == 0)
 			{
 				printf("Generation %d best solution error: %f\n", generationIt, minError);
 			}
