@@ -21,16 +21,6 @@
 
 using namespace Probulator;
 
-// TODO: implement computeEnvmapAverage() for lat-long envmaps, taking pixel weights into account
-
-static vec4 computeAverage(Image& image)
-{
-	vec4 sum = vec4(0.0f);
-	image.forPixels([&](vec4& pixel){ sum += pixel; });
-	sum /= image.getPixelCount();
-	return sum;
-}
-
 class Experiment
 {
 public:

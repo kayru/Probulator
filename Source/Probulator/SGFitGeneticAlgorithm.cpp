@@ -95,7 +95,7 @@ namespace Probulator
 		return uniformDistribution(rng);
 	}
 
-	static float errorFunction(
+	inline float errorFunction(
 		const SgBasis& basis,
 		const std::vector<RadianceSample>& samples)
 	{
@@ -170,8 +170,6 @@ namespace Probulator
 			nextPopulation.push_back(basis);
 		}
 
-		double bestFitness = 0.0f;
-
 		std::vector<float> populationError(populationCount);
 		std::vector<double> populationFitness(populationCount);
 		std::vector<u32> sortedSolutionIndices(populationCount);
@@ -201,12 +199,6 @@ namespace Probulator
 			nullptr, &clError);
 		assert(clError == CL_SUCCESS);
 
-		cl_mem populationErrorBuffer = clCreateBuffer(
-			g_computeContext, CL_MEM_WRITE_ONLY,
-			sizeof(float)*populationCount,
-			nullptr, &clError);
-		assert(clError == CL_SUCCESS);
-
 		for (u32 generationIt = 0; generationIt < generationCount; generationIt++)
 		{
 			std::swap(population, nextPopulation);
@@ -228,7 +220,6 @@ namespace Probulator
 			}
 
 			const int lobeCount = (int)basis.size();
-			const int basisCount = (int)population.size();
 			const int radianceSampleCount = (int)samples.size();
 			errorKernel.setKernelArgs(populationBuffer, lobeCount, radianceBuffer, radianceSampleCount, errorBuffer);
 
