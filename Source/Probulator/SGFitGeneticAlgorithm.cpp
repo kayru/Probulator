@@ -230,12 +230,7 @@ namespace Probulator
 			const int lobeCount = (int)basis.size();
 			const int basisCount = (int)population.size();
 			const int radianceSampleCount = (int)samples.size();
-			int paramId = 0;
-			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(populationBuffer), &populationBuffer);
-			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(lobeCount), &lobeCount);
-			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(radianceBuffer), &radianceBuffer);
-			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(radianceSampleCount), &radianceSampleCount);
-			clSetKernelArg(errorKernel.getKernel(), paramId++, sizeof(errorBuffer), &errorBuffer);
+			errorKernel.setKernelArgs(populationBuffer, lobeCount, radianceBuffer, radianceSampleCount, errorBuffer);
 
 			size_t globalSize[2] =
 			{
