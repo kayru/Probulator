@@ -49,8 +49,8 @@ namespace Probulator
 			forPixels([value](PixelType& p){ p = value; });
 		}
 
-		template <typename T>
-		void forPixels(T fun)
+		// Invoke fun(PixelType& pixel) over all pixels
+		template <typename T> void forPixels(T fun)
 		{
 			for (PixelType& pixel : m_pixels)
 			{
@@ -58,8 +58,8 @@ namespace Probulator
 			}
 		}
 
-		template <typename T>
-		void forPixels1D(T fun)
+		// Invoke fun(PixelType& pixel, u32 index) over all pixels
+		template <typename T> void forPixels1D(T fun)
 		{
 			u32 count = getPixelCount();
 			for (u32 i = 0; i < count; ++i)
@@ -68,8 +68,8 @@ namespace Probulator
 			}
 		}
 
-		template <typename T>
-		void forPixels2D(T fun)
+		// Invoke fun(PixelType& pixel, ivec2 position) over all pixels
+		template <typename T> void forPixels2D(T fun)
 		{
 			ivec2 size = getSize();
 			for (int y = 0; y < size.y; ++y)
@@ -82,8 +82,8 @@ namespace Probulator
 			}
 		}
 
-		template <typename T>
-		inline void parallelForPixels2D(T fun)
+		// Invoke fun(PixelType& pixel, ivec2 position) over all pixels in parallel
+		template <typename T> inline void parallelForPixels2D(T fun)
 		{
 			u32 pixelCount = m_size.x * m_size.y;
 			parallelFor(0u, pixelCount, [&](u32 i)
