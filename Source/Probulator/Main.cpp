@@ -10,6 +10,8 @@
 #include "SGFitLeastSquares.h"
 #include "Compute.h"
 
+#include <fstream>
+
 using namespace Probulator;
 
 // TODO: implement computeEnvmapAverage() for lat-long envmaps, taking pixel weights into account
@@ -20,6 +22,42 @@ static vec4 computeAverage(Image& image)
 	image.forPixels([&](vec4& pixel){ sum += pixel; });
 	sum /= image.getPixelCount();
 	return sum;
+}
+
+void generateReportHtml(const char* filename)
+{
+	struct
+	{
+		const char* mode;
+		const char* radiance;
+		const char* irradiance;
+	} data[] = { 
+		{ "Reference", "radiance.png", "irradianceMC.png" },
+		{ "SH L2", "radianceSH.png", "irradianceSH.png" },
+		{ "SG Naive", "radianceSG.png", "irradianceSG.png" },
+		{ "SG Least Squares", "radianceSGLS.png", "irradianceSGLS.png" },
+		{ "SG Non-negative Least Squares", "radianceSGNNLS.png", "irradianceSGNNLS.png" },
+		{ "SG Genetic Algorithm", "radianceSGGA.png", "irradianceSGGA.png" },
+	};
+
+	std::ofstream f;
+	f.open(filename);
+	f << "<!DOCTYPE html>" << std::endl;
+	f << "<html>" << std::endl;
+	f << "<table>" << std::endl;
+	f << "<tr><td>Mode</td><td>Radiance</td><td>Irradiance</td></tr>" << std::endl;
+	for (const auto& it : data)
+	{
+		f << "<tr>";
+		f << "<td>" << it.mode << "</td>";
+		f << "<td><img src=\"" << it.radiance << "\"/></td>";
+		f << "<td><img src=\"" << it.irradiance<< "\"/></td>";
+		f << "</tr>";
+		f << std::endl;
+	}
+	f << "</table>" << std::endl;
+	f << "</html>" << std::endl;
+	f.close();
 }
 
 int main(int argc, char** argv)
@@ -306,6 +344,8 @@ int main(int argc, char** argv)
 	combinedImage.paste(irradianceSgImage, outputImageSize * ivec2(5, 1));
 	
 	combinedImage.writePng("combined.png");
+
+	generateReportHtml("report.html");
 
 	return 0;
 }
