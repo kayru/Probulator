@@ -59,6 +59,13 @@ int main(int argc, char** argv)
 
 	const ivec2 outputImageSize(256, 128);
 
+	if (inputImage.getSize() != outputImageSize)
+	{
+		inputImage = imageResize(inputImage, outputImageSize);
+	}
+
+	inputImage.writeHdr("input.hdr");
+
 	//////////////////////
 	// Generate SG basis
 	//////////////////////

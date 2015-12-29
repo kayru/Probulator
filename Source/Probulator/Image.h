@@ -34,6 +34,7 @@ namespace Probulator
 		u32 getHeight() const { return m_size.y; }
 		u32 getPixelCount() const { return m_size.x * m_size.y; }
 		u64	getSizeBytes() const { return m_pixels.size() * sizeof(PixelType); }
+		u64 getStrideBytes() const { return m_size.x * sizeof(PixelType); }
 
 		const PixelType& at(u32 x, u32 y) const { return m_pixels[x + m_size.x * y]; }
 		PixelType& at(u32 x, u32 y) { return m_pixels[x + m_size.x * y]; }
@@ -129,4 +130,6 @@ namespace Probulator
 
 		void paste(const Image& src, ivec2 pos);
 	};
+
+	Image imageResize(const Image& input, ivec2 newSize);
 }

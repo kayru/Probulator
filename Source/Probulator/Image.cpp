@@ -6,6 +6,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include <stb_image_resize.h>
+
 namespace Probulator
 {
 	void Image::writePng(const char* filename)
@@ -75,6 +78,14 @@ namespace Probulator
 		ivec2 pos = floor(uv * (vec2)m_size);
 		pos = clamp(pos, ivec2(0), m_size - 1);
 		return at(pos);
+	}
+
+	Image imageResize(const Image& input, ivec2 newSize)
+	{
+		Image output(newSize);
+		stbir_resize_float(input.data(), input.getWidth(), input.getHeight(), (int)input.getStrideBytes(), 
+			output.data(), output.getWidth(), output.getHeight(), (int)output.getStrideBytes(), 4);
+		return output;
 	}
 
 }
