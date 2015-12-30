@@ -11,6 +11,8 @@
 #include "Compute.h"
 
 #include <fstream>
+#include <memory>
+#include <sstream>
 
 using namespace Probulator;
 
@@ -24,34 +26,310 @@ static vec4 computeAverage(Image& image)
 	return sum;
 }
 
-void generateReportHtml(const char* filename)
+class Experiment
 {
-	struct
+public:
+
+	class SharedData
 	{
-		const char* mode;
-		const char* radiance;
-		const char* irradiance;
-	} data[] = { 
-		{ "Reference", "radiance.png", "irradianceMC.png" },
-		{ "SH L2", "radianceSH.png", "irradianceSH.png" },
-		{ "SG Naive", "radianceSG.png", "irradianceSG.png" },
-		{ "SG Least Squares", "radianceSGLS.png", "irradianceSGLS.png" },
-		{ "SG Non-negative Least Squares", "radianceSGNNLS.png", "irradianceSGNNLS.png" },
-		{ "SG Genetic Algorithm", "radianceSGGA.png", "irradianceSGGA.png" },
+	public:
+
+		SharedData(u32 sampleCount, ivec2 outputSize, const char* hdrFilename)
+			: m_directionImage(outputSize)
+			, m_outputSize(outputSize)
+		{
+			if (!m_radianceImage.readHdr(hdrFilename))
+			{
+				return;
+			}
+
+			if (m_radianceImage.getSize() != outputSize)
+			{
+				m_radianceImage = imageResize(m_radianceImage, outputSize);
+			}
+
+			m_directionImage.forPixels2D([outputSize](vec3& direction, ivec2 pixelPos)
+			{
+				vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(outputSize - ivec2(1));
+				direction = latLongTexcoordToCartesian(uv);
+			});
+
+			m_radianceSamples.reserve(sampleCount);
+			for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
+			{
+				vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
+				vec3 direction = sampleUniformSphere(sampleUv);
+
+				vec3 sample = (vec3)m_radianceImage.sampleNearest(cartesianToLatLongTexcoord(direction));
+
+				m_radianceSamples.push_back({ direction, sample });
+			}
+		}
+
+		bool isValid() const
+		{
+			return m_radianceImage.getSizeBytes() != 0;
+		}
+
+		// directions corresponding to lat-long texels
+		ImageBase<vec3> m_directionImage;
+
+		// lat-long radiance 
+		Image m_radianceImage;
+
+		// radiance samples uniformly distributed over a sphere
+		std::vector<RadianceSample> m_radianceSamples;
+
+		ivec2 m_outputSize;
 	};
 
+	virtual void run(SharedData& data) = 0;
+
+	virtual ~Experiment() {};
+
+	// Experiment metadata
+
+	std::string m_name;
+	std::string m_suffix;
+
+	// Common experiment outputs
+
+	Image m_radianceImage;
+	Image m_irradianceImage;
+	float m_radianceMse = std::numeric_limits<float>::infinity();
+};
+
+typedef std::vector<std::unique_ptr<Experiment>> ExperimentList;
+
+class ExperimentMC : public Experiment
+{
+public:
+
+	void run(SharedData& data) override
+	{
+		m_radianceImage = data.m_radianceImage;
+		m_radianceMse = 0.0f;
+
+		m_irradianceImage = Image(data.m_outputSize);
+		m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
+		{
+			vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(m_irradianceImage.getSize() - ivec2(1));
+			vec3 direction = latLongTexcoordToCartesian(uv);
+			mat3 basis = makeOrthogonalBasis(direction);
+			vec3 sample = vec3(0.0f);
+			for (u32 sampleIt = 0; sampleIt < m_hemisphereSampleCount; ++sampleIt)
+			{
+				vec2 sampleUv = sampleHammersley(sampleIt, m_hemisphereSampleCount);
+				vec3 hemisphereDirection = sampleCosineHemisphere(sampleUv);
+				vec3 sampleDirection = basis * hemisphereDirection;
+				sample += (vec3)m_radianceImage.sampleNearest(cartesianToLatLongTexcoord(sampleDirection));
+			}
+
+			sample /= m_hemisphereSampleCount;
+
+			pixel = vec4(sample, 1.0f);
+		});
+	}
+
+	ExperimentMC& setHemisphereSampleCount(u32 v) { m_hemisphereSampleCount = v; return *this; }
+
+	u32 m_hemisphereSampleCount = 1000;
+};
+
+class ExperimentSHL2 : public Experiment
+{
+public:
+
+	void run(SharedData& data) override
+	{
+		SphericalHarmonicsL2RGB shRadiance;
+		const u32 sampleCount = (u32)data.m_radianceSamples.size();
+		for (const RadianceSample& sample : data.m_radianceSamples)
+		{
+			shAddWeighted(shRadiance, shEvaluateL2(sample.direction), sample.value * (fourPi / sampleCount));
+		}
+
+		m_radianceImage = Image(data.m_outputSize);
+		m_irradianceImage = Image(data.m_outputSize);
+
+		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
+		{
+			SphericalHarmonicsL2 directionSh = shEvaluateL2(direction);
+
+			vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
+			m_radianceImage.at(pixelPos) = vec4(sampleSh, 1.0f);
+
+			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
+			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
+		});
+	}
+};
+
+class ExperimentSGBase : public Experiment
+{
+public:
+
+	ExperimentSGBase& setLobeCountAndLambda(u32 lobeCount, float lambda)
+	{ 
+		m_lobeCount = lobeCount;
+		m_lambda = lambda;
+		return *this; 
+	}
+
+	ExperimentSGBase& setBrdfLambda(float brdfLambda)
+	{
+		m_brdfLambda = brdfLambda;
+		return *this;
+	}
+
+	void run(SharedData& data) override
+	{
+		generateLobes();
+		solveForRadiance(data.m_radianceSamples);
+		generateRadianceImage(data);
+		generateIrradianceImage(data);
+	}
+
+	u32 m_lobeCount = 1;
+	float m_lambda = 0.0f;
+	float m_brdfLambda = 0.0f;
+	SgBasis m_lobes;
+
+protected:
+
+	virtual void solveForRadiance(const std::vector<RadianceSample>& radianceSamples) = 0;
+
+	void generateLobes()
+	{
+		std::vector<vec3> sgLobeDirections(m_lobeCount);
+
+		m_lobes.resize(m_lobeCount);
+		for (u32 lobeIt = 0; lobeIt < m_lobeCount; ++lobeIt)
+		{
+			sgLobeDirections[lobeIt] = sampleVogelsSphere(lobeIt, m_lobeCount);
+
+			m_lobes[lobeIt].p = sgLobeDirections[lobeIt];
+			m_lobes[lobeIt].lambda = m_lambda;
+			m_lobes[lobeIt].mu = vec3(0.0f);
+		}
+	}
+
+	void generateRadianceImage(const SharedData& data)
+	{
+		m_radianceImage = Image(data.m_outputSize);
+		m_radianceImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
+		{
+			vec3 direction = data.m_directionImage.at(pixelPos);
+			vec3 sampleSg = sgBasisEvaluate(m_lobes, direction);
+			pixel = vec4(sampleSg, 1.0f);
+		});
+
+		m_radianceMse = sgBasisMeanSquareErrorScalar(m_lobes, data.m_radianceSamples);
+	}
+
+	void generateIrradianceImage(const SharedData& data)
+	{
+		SphericalGaussian brdf;
+		brdf.lambda = m_brdfLambda;
+		brdf.mu = vec3(sgFindMu(brdf.lambda, pi));
+
+		m_irradianceImage = Image(data.m_outputSize);
+		m_irradianceImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
+		{
+			brdf.p = data.m_directionImage.at(pixelPos);
+			vec3 sampleSg = sgBasisDot(m_lobes, brdf) / pi;
+			pixel = vec4(sampleSg, 1.0f);
+		});
+	}
+};
+
+class ExperimentSGNaive : public ExperimentSGBase
+{
+public:
+
+	void solveForRadiance(const std::vector<RadianceSample>& radianceSamples) override
+	{
+		const u32 lobeCount = (u32)m_lobes.size();
+		const u32 sampleCount = (u32)radianceSamples.size();
+		const float normFactor = sgBasisNormalizationFactor(m_lambda, lobeCount);
+
+		for (const RadianceSample& sample : radianceSamples)
+		{
+			for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
+			{
+				const SphericalGaussian& sg = m_lobes[lobeIt];
+				float w = sgEvaluate(sg.p, sg.lambda, sample.direction);
+				m_lobes[lobeIt].mu += sample.value * normFactor * (w / sampleCount);
+			}
+		}
+	}
+};
+
+class ExperimentSGLS : public ExperimentSGBase
+{
+public:
+
+	void solveForRadiance(const std::vector<RadianceSample>& radianceSamples) override
+	{
+		m_lobes = sgFitLeastSquares(m_lobes, radianceSamples);
+	}
+};
+
+class ExperimentSGNNLS : public ExperimentSGBase
+{
+public:
+
+	void solveForRadiance(const std::vector<RadianceSample>& radianceSamples) override
+	{
+		m_lobes = sgFitNNLeastSquares(m_lobes, radianceSamples);
+	}
+};
+
+class ExperimentSGGA : public ExperimentSGBase
+{
+public:
+
+	u32 m_populationCount = 50;
+	u32 m_generationCount = 2000;
+
+	ExperimentSGBase& setPopulationAndGenerationCount(u32 populationCount, u32 generationCount)
+	{
+		m_populationCount = populationCount;
+		m_generationCount = generationCount;
+		return *this;
+	}
+
+	void solveForRadiance(const std::vector<RadianceSample>& radianceSamples) override
+	{
+		m_lobes = sgFitNNLeastSquares(m_lobes, radianceSamples); // NNLS is used to seed GA
+		m_lobes = sgFitGeneticAlgorithm(m_lobes, radianceSamples, m_populationCount, m_generationCount);
+
+	}
+};
+
+void generateReportHtml(const ExperimentList& experiments, const char* filename)
+{
 	std::ofstream f;
 	f.open(filename);
 	f << "<!DOCTYPE html>" << std::endl;
 	f << "<html>" << std::endl;
 	f << "<table>" << std::endl;
-	f << "<tr><td>Mode</td><td>Radiance</td><td>Irradiance</td></tr>" << std::endl;
-	for (const auto& it : data)
+	f << "<tr><td>Radiance</td><td>Irradiance</td><td>Radiance MSE</td><td>Mode</td></tr>" << std::endl;
+	for (const auto& it : experiments)
 	{
+		std::ostringstream radianceFilename;
+		radianceFilename << "radiance" << it->m_suffix << ".png";
+		it->m_radianceImage.writePng(radianceFilename.str().c_str());
+
+		std::ostringstream irradianceFilename;
+		irradianceFilename << "irradiance" << it->m_suffix << ".png";
+		it->m_irradianceImage.writePng(irradianceFilename.str().c_str());
+
 		f << "<tr>";
-		f << "<td>" << it.mode << "</td>";
-		f << "<td><img src=\"" << it.radiance << "\"/></td>";
-		f << "<td><img src=\"" << it.irradiance<< "\"/></td>";
+		f << "<td><img src=\"" << radianceFilename.str() << "\"/></td>";
+		f << "<td><img src=\"" << irradianceFilename.str() << "\"/></td>";
+		f << "<td>" << it->m_radianceMse << "</td>";
+		f << "<td>" << it->m_name << "</td>";
 		f << "</tr>";
 		f << std::endl;
 	}
@@ -60,9 +338,22 @@ void generateReportHtml(const char* filename)
 	f.close();
 }
 
+template <typename T> 
+inline T& addExperiment(ExperimentList& list, const char* name, const char* suffix)
+{
+	T* e = new T;
+	list.push_back(std::unique_ptr<Experiment>(e));
+	e->m_name = name;
+	e->m_suffix = suffix;
+	return *e;
+}
+
 int main(int argc, char** argv)
 {
-#if 1
+	const ivec2 outputImageSize(256, 128);
+	const u32 lobeCount = 12; // <-- tweak this
+	const float lambda = 0.5f * lobeCount; // <-- tweak this; 
+	const u32 sampleCount = 20000;
 
 	if (argc < 2)
 	{
@@ -71,281 +362,50 @@ int main(int argc, char** argv)
 	}
 
 	const char* inputFilename = argv[1];
-	Image inputImage;
-	if (!inputImage.readHdr(inputFilename))
+
+	printf("Loading '%s'\n", inputFilename);
+
+	Experiment::SharedData sharedData(sampleCount, outputImageSize, inputFilename);
+
+	if (!sharedData.isValid())
 	{
 		printf("ERROR: Failed to read input image from file '%s'\n", inputFilename);
 		return 1;
 	}
 
-	auto getSample = [&](vec3 direction)
+	ExperimentList experiments;
+
+	addExperiment<ExperimentMC>(experiments, "Monte Carlo", "MC")
+		.setHemisphereSampleCount(5000);
+
+	addExperiment<ExperimentSHL2>(experiments, "Spherical Harmonics L2", "SHL2");
+
+	addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
+		.setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
+		.setLobeCountAndLambda(lobeCount, lambda);
+
+	addExperiment<ExperimentSGLS>(experiments, "Spherical Gaussians [Least Squares]", "SGLS")
+		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
+		.setLobeCountAndLambda(lobeCount, lambda);
+
+	addExperiment<ExperimentSGNNLS>(experiments, "Spherical Gaussians [Non-Negative Least Squares]", "SGNNLS")
+		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
+		.setLobeCountAndLambda(lobeCount, lambda);
+
+	addExperiment<ExperimentSGGA>(experiments, "Spherical Gaussians [Genetic Algorithm]", "SGGA")
+		.setPopulationAndGenerationCount(50, 2000)
+		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
+		.setLobeCountAndLambda(lobeCount, lambda);
+
+	printf("Running experiments:\n");
+
+	for (const auto& e : experiments)
 	{
-		return (vec3)inputImage.sampleNearest(cartesianToLatLongTexcoord(direction));
-	};
-
-#else
-
-	auto getSample = [&](vec3 direction)
-	{
-		//return vec3(max(0.0f, -direction.z));
-		return 10.0f * vec3(pow(max(0.0f, -direction.z), 100.0f));
-		//return 200.0f * vec3(pow(max(0.0f, -direction.z), 100.0f));
-		//return vec3(0.5f);
-	};
-
-#endif
-
-	const ivec2 outputImageSize(256, 128);
-
-	if (inputImage.getSize() != outputImageSize)
-	{
-		inputImage = imageResize(inputImage, outputImageSize);
+		printf("  * %s\n", e->m_name.c_str());
+		e->run(sharedData);
 	}
 
-	inputImage.writeHdr("input.hdr");
-
-	//////////////////////
-	// Generate SG basis
-	//////////////////////
-
-	const u32 lobeCount = 12; // <-- tweak this
-	const float lambda = 0.5f * lobeCount; // <-- tweak this; 
-
-	SgBasis lobes(lobeCount);
-	std::vector<vec3> sgLobeDirections;
-	for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
-	{
-		sgLobeDirections.push_back(sampleVogelsSphere(lobeIt, lobeCount));
-
-		lobes[lobeIt].p = sgLobeDirections.back();
-		lobes[lobeIt].lambda = lambda;
-		lobes[lobeIt].mu = vec3(0.0f);
-	}
-
-	const float sgNormFactor = sgBasisNormalizationFactor(lambda, lobeCount);
-
-	////////////////////////////////////////////
-	// Generate radiance image (not convolved)
-	////////////////////////////////////////////
-
-	Image radianceImage(outputImageSize);
-	radianceImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
-	{
-		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(outputImageSize - ivec2(1));
-		vec3 direction = latLongTexcoordToCartesian(uv);
-		vec3 sample = getSample(direction);
-
-		pixel = vec4(sample, 1.0f);
-	});
-
-	radianceImage.writePng("radiance.png");
-
-	printf("Average radiance: %f\n", computeAverage(radianceImage).r);
-
-	/////////////////////
-	// Project radiance
-	/////////////////////
-
-	const u32 sampleCount = 20000;
-
-	std::vector<RadianceSample> envmapSamples;
-	envmapSamples.reserve(sampleCount);
-
-	SphericalHarmonicsL2RGB shRadiance;
-
-	for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
-	{
-		vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
-		vec3 direction = sampleUniformSphere(sampleUv);
-
-		vec3 sample = getSample(direction);
-
-		for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
-		{
-			const SphericalGaussian& sg = lobes[lobeIt];
-			float w = sgEvaluate(sg.p, sg.lambda, direction);
-			lobes[lobeIt].mu += sample * sgNormFactor * (w / sampleCount);
-		}
-
-		shAddWeighted(shRadiance, shEvaluateL2(direction), sample * (fourPi / sampleCount));
-
-		envmapSamples.push_back({direction, sample});
-	}
-
-	SgBasis lobesGa = sgFitGeneticAlgorithm(lobes, envmapSamples, 50, 2000, 0, true);
-	SgBasis lobesLs = sgFitLeastSquares(lobes, envmapSamples);
-	SgBasis lobesNNLs = sgFitNNLeastSquares(lobes, envmapSamples);
-
-	vec3 mseAdhoc = sgBasisMeanSquareError(lobes, envmapSamples);
-	printf("Ad-hoc basis MSE: %f\n", dot(mseAdhoc, vec3(1.0f / 3.0f)));
-
-	vec3 mseGa = sgBasisMeanSquareError(lobesGa, envmapSamples);
-	printf("GA basis MSE: %f\n", dot(mseGa, vec3(1.0f / 3.0f)));
-
-	vec3 mseLs = sgBasisMeanSquareError(lobesLs, envmapSamples);
-	printf("LS basis MSE: %f\n", dot(mseLs, vec3(1.0f / 3.0f)));
-
-	vec3 mseNNLs = sgBasisMeanSquareError(lobesNNLs, envmapSamples);
-	printf("NNLS basis MSE: %f\n", dot(mseNNLs, vec3(1.0f / 3.0f)));
-
-	///////////////////////////////////////////
-	// Generate reconstructed radiance images
-	///////////////////////////////////////////
-
-	Image radianceSgImage(outputImageSize);
-	Image radianceSgLsImage(outputImageSize);
-	Image radianceSgNNLsImage(outputImageSize);
-	Image radianceSgGaImage(outputImageSize);
-	Image radianceShImage(outputImageSize);
-
-	radianceSgImage.forPixels2D([&](vec4&, ivec2 pixelPos)
-	{
-		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(outputImageSize - ivec2(1));
-		vec3 direction = latLongTexcoordToCartesian(uv);
-
-		vec3 sampleSg = sgBasisEvaluate(lobes, direction);
-		vec3 sampleSgGa = sgBasisEvaluate(lobesGa, direction);
-		vec3 sampleSgLs = sgBasisEvaluate(lobesLs, direction);
-		vec3 sampleSgNNLs = sgBasisEvaluate(lobesNNLs, direction);
-
-		SphericalHarmonicsL2 directionSh = shEvaluateL2(direction);
-		vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
-
-		radianceSgLsImage.at(pixelPos) = vec4(sampleSgLs, 1.0f);
-		radianceSgNNLsImage.at(pixelPos) = vec4(sampleSgNNLs, 1.0f);
-		radianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
-		radianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
-		radianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
-	});
-
-	radianceSgLsImage.writePng("radianceSGLS.png");
-	radianceSgNNLsImage.writePng("radianceSGNNLS.png");
-	radianceSgGaImage.writePng("radianceSGGA.png");
-	radianceSgImage.writePng("radianceSG.png");
-	radianceShImage.writePng("radianceSH.png");
-
-	printf("Average SGLS radiance: %f\n", computeAverage(radianceSgLsImage).r);
-	printf("Average SGNNLS radiance: %f\n", computeAverage(radianceSgNNLsImage).r);
-	printf("Average SGGA radiance: %f\n", computeAverage(radianceSgGaImage).r);
-	printf("Average SG radiance: %f\n", computeAverage(radianceSgImage).r);
-	printf("Average SH radiance: %f\n", computeAverage(radianceShImage).r);
-
-	///////////////////////////////////////////////////////////////
-	// Generate irradiance image by convolving lighting with BRDF
-	///////////////////////////////////////////////////////////////
-
-	Image irradianceSgGaImage(outputImageSize);
-	Image irradianceSgLsImage(outputImageSize);
-	Image irradianceSgNNLsImage(outputImageSize);
-	Image irradianceSgImage(outputImageSize);
-	Image irradianceShImage(outputImageSize);
-
-	//SphericalGaussian brdf = sgCosineLobe();
-	SphericalGaussian brdf;
-	brdf.lambda = 8.5f; // Chosen arbitrarily through experimentation
-	brdf.mu = vec3(sgFindMu(brdf.lambda, pi));
-
-	SphericalGaussian brdfGa;
-	brdfGa.lambda = 3.0f; // Chosen arbitrarily through experimentation
-	brdfGa.mu = vec3(sgFindMu(brdfGa.lambda, pi));
-
-	SphericalGaussian brdfLs;
-	brdfLs.lambda = 3.0f; // Chosen arbitrarily through experimentation
-	brdfLs.mu = vec3(sgFindMu(brdfLs.lambda, pi));
-
-	SphericalGaussian brdfNNLs;
-	brdfNNLs.lambda = 3.0f; // Chosen arbitrarily through experimentation
-	brdfNNLs.mu = vec3(sgFindMu(brdfNNLs.lambda, pi));
-
-	irradianceSgImage.forPixels2D([&](vec4&, ivec2 pixelPos)
-	{
-		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(irradianceSgImage.getSize() - ivec2(1));
-		vec3 direction = latLongTexcoordToCartesian(uv);
-
-		brdf.p = direction;
-		brdfGa.p = direction;
-		brdfLs.p = direction;
-		brdfNNLs.p = direction;
-		
-		vec3 sampleSg = sgBasisDot(lobes, brdf) / pi;
-		irradianceSgImage.at(pixelPos) = vec4(sampleSg, 1.0f);
-
-		vec3 sampleSgGa = sgBasisDot(lobesGa, brdfGa) / pi;
-		irradianceSgGaImage.at(pixelPos) = vec4(sampleSgGa, 1.0f);
-
-		vec3 sampleSgLs = sgBasisDot(lobesLs, brdfLs) / pi;
-		irradianceSgLsImage.at(pixelPos) = vec4(sampleSgLs, 1.0f);
-
-		vec3 sampleSgNNLs = sgBasisDot(lobesNNLs, brdfNNLs) / pi;
-		irradianceSgNNLsImage.at(pixelPos) = vec4(sampleSgNNLs, 1.0f);
-
-		vec3 sampleSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
-		irradianceShImage.at(pixelPos) = vec4(sampleSh, 1.0f);
-	});
-
-	printf("Average SG irradiance: %f\n", computeAverage(irradianceSgImage).r);
-	printf("Average SH irradiance: %f\n", computeAverage(irradianceShImage).r);
-
-	irradianceSgLsImage.writePng("irradianceSGLS.png");
-	irradianceSgNNLsImage.writePng("irradianceSGNNLS.png");
-	irradianceSgGaImage.writePng("irradianceSGGA.png");
-	irradianceSgImage.writePng("irradianceSG.png");
-	irradianceShImage.writePng("irradianceSH.png");
-
-	/////////////////////////////////////////////////////////
-	// Generate reference convolved image using Monte Carlo
-	/////////////////////////////////////////////////////////
-
-	Image irradianceMcImage(outputImageSize);
-	irradianceMcImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
-	{
-		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(outputImageSize - ivec2(1));
-		vec3 direction = latLongTexcoordToCartesian(uv);
-
-		mat3 basis = makeOrthogonalBasis(direction);
-
-		vec3 sample = vec3(0.0f);
-		const u32 mcSampleCount = 5000;
-		for (u32 sampleIt = 0; sampleIt < mcSampleCount; ++sampleIt)
-		{
-			vec2 sampleUv = sampleHammersley(sampleIt, mcSampleCount);
-			vec3 hemisphereDirection = sampleCosineHemisphere(sampleUv);
-			vec3 sampleDirection = basis * hemisphereDirection;
-			sample += getSample(sampleDirection);
-		}
-
-		sample /= mcSampleCount;
-
-		pixel = vec4(sample, 1.0f);
-	});
-
-	irradianceMcImage.writePng("irradianceMC.png");
-
-	printf("Average MC irradiance: %f\n", computeAverage(irradianceMcImage).r);
-
-	////////////////////////////////////////////////
-	// Write all images into a single combined PNG
-	////////////////////////////////////////////////
-
-	Image combinedImage(outputImageSize.x*6, outputImageSize.y*2);
-
-	combinedImage.paste(radianceImage, outputImageSize * ivec2(0,0));
-	combinedImage.paste(radianceShImage, outputImageSize * ivec2(1, 0));
-	combinedImage.paste(radianceSgGaImage, outputImageSize * ivec2(2, 0));
-	combinedImage.paste(radianceSgLsImage, outputImageSize * ivec2(3, 0));
-	combinedImage.paste(radianceSgNNLsImage, outputImageSize * ivec2(4, 0));
-	combinedImage.paste(radianceSgImage, outputImageSize * ivec2(5, 0));
-
-	combinedImage.paste(irradianceMcImage, outputImageSize * ivec2(0, 1));
-	combinedImage.paste(irradianceShImage, outputImageSize * ivec2(1, 1));
-	combinedImage.paste(irradianceSgGaImage, outputImageSize * ivec2(2, 1));
-	combinedImage.paste(irradianceSgLsImage, outputImageSize * ivec2(3, 1));
-	combinedImage.paste(irradianceSgNNLsImage, outputImageSize * ivec2(4, 1));
-	combinedImage.paste(irradianceSgImage, outputImageSize * ivec2(5, 1));
-	
-	combinedImage.writePng("combined.png");
-
-	generateReportHtml("report.html");
+	generateReportHtml(experiments, "report.html");
 
 	return 0;
 }

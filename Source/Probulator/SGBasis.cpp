@@ -68,4 +68,9 @@ namespace Probulator
 		return errorSquaredSum * sampleWeight;
 	}
 
+	float sgBasisMeanSquareErrorScalar(const SgBasis& basis, const std::vector<RadianceSample>& radianceSamples)
+	{
+		return dot(sgBasisMeanSquareError(basis, radianceSamples), vec3(1.0f / 3.0f));
+	}
+
 }

@@ -14,4 +14,5 @@ namespace Probulator
 	vec3 sgBasisDot(const SgBasis& basis, const SphericalGaussian& lobe);
 	void sgBasisMeanAndVariance(const SphericalGaussian* lobes, u32 lobeCount, u32 sampleCount, vec3& outMean, vec3& outVariance);
 	vec3 sgBasisMeanSquareError(const SgBasis& basis, const std::vector<RadianceSample>& radianceSamples);
+	float sgBasisMeanSquareErrorScalar(const SgBasis& basis, const std::vector<RadianceSample>& radianceSamples);
 }
