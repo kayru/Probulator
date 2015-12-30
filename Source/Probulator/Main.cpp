@@ -316,7 +316,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 	f << "<!DOCTYPE html>" << std::endl;
 	f << "<html>" << std::endl;
 	f << "<table>" << std::endl;
-	f << "<tr><td>Radiance</td><td>Irradiance</td><td>Radiance MSE</td><td>Mode</td></tr>" << std::endl;
+	f << "<tr><td>Radiance</td><td>Irradiance</td><td>Mode</td></tr>" << std::endl;
 	for (const auto& it : experiments)
 	{
 		std::ostringstream radianceFilename;
@@ -328,9 +328,15 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 		it->m_irradianceImage.writePng(irradianceFilename.str().c_str());
 
 		f << "<tr>";
-		f << "<td><img src=\"" << radianceFilename.str() << "\"/></td>";
-		f << "<td><img src=\"" << irradianceFilename.str() << "\"/></td>";
-		f << "<td>" << it->m_radianceMse << "</td>";
+		f << "<td valign=\"top\"><img src=\"" << radianceFilename.str() << "\"/>";
+		if (it->m_radianceMse != 0.0f)
+		{
+			f << "<br/>";
+			f << "MSE: " << it->m_radianceMse << " ";
+			f << "RMS: " << sqrtf(it->m_radianceMse);
+		}
+		f << "</td>";
+		f << "<td valign=\"top\"><img src=\"" << irradianceFilename.str() << "\"/></td>";
 		f << "<td>" << it->m_name << "</td>";
 		f << "</tr>";
 		f << std::endl;
