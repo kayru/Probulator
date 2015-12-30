@@ -17,8 +17,9 @@ include_directories(
 
 add_executable(Probulator
 	Common.h
-	Compute.h
 	Compute.cpp
+	Compute.h
+	DiscreteDistribution.h
 	Image.cpp
 	Image.h
 	Main.cpp
