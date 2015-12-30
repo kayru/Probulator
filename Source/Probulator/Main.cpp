@@ -13,6 +13,11 @@
 #include <fstream>
 #include <memory>
 #include <sstream>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define strcasecmp _stricmp
+#endif
 
 using namespace Probulator;
 
@@ -91,6 +96,7 @@ public:
 
 	std::string m_name;
 	std::string m_suffix;
+	bool m_enabled = true;
 
 	// Common experiment outputs
 
@@ -319,6 +325,9 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 	f << "<tr><td>Radiance</td><td>Irradiance</td><td>Mode</td></tr>" << std::endl;
 	for (const auto& it : experiments)
 	{
+		if (!it->m_enabled)
+			continue;
+
 		std::ostringstream radianceFilename;
 		radianceFilename << "radiance" << it->m_suffix << ".png";
 		it->m_radianceImage.writePng(radianceFilename.str().c_str());
@@ -356,6 +365,22 @@ inline T& addExperiment(ExperimentList& list, const char* name, const char* suff
 	return *e;
 }
 
+static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, char** suffixes)
+{
+	for (const auto& e : list)
+	{
+		e->m_enabled = false;
+		for (u32 i = 0; i < suffixCount; ++i)
+		{
+			if (!strcasecmp(e->m_suffix.c_str(), suffixes[i]))
+			{
+				e->m_enabled = true;
+				break;
+			}
+		}
+	}
+}
+
 int main(int argc, char** argv)
 {
 	const ivec2 outputImageSize(256, 128);
@@ -365,7 +390,7 @@ int main(int argc, char** argv)
 
 	if (argc < 2)
 	{
-		printf("Usage: Probulator <LatLongEnvmap.hdr>\n");
+		printf("Usage: Probulator <LatLongEnvmap.hdr> [enabled experiments by suffix]\n");
 		return 1;
 	}
 
@@ -405,10 +430,18 @@ int main(int argc, char** argv)
 		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
 		.setLobeCountAndLambda(lobeCount, lambda);
 
+	if (argc > 2)
+	{
+		enableExperimentsBySuffix(experiments, argc - 2, argv + 2);
+	}
+
 	printf("Running experiments:\n");
 
 	for (const auto& e : experiments)
 	{
+		if (!e->m_enabled)
+			continue;
+
 		printf("  * %s\n", e->m_name.c_str());
 		e->run(sharedData);
 	}
