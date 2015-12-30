@@ -128,4 +128,25 @@ namespace Probulator
 		sh[7] *= scale(2);
 		sh[8] *= scale(2);
 	}
+
+	inline vec3 shMeanSquareError(const SphericalHarmonicsL2RGB& sh, const std::vector<RadianceSample>& radianceSamples)
+	{
+		vec3 errorSquaredSum = vec3(0.0f);
+
+		for (const RadianceSample& sample : radianceSamples)
+		{
+			SphericalHarmonicsL2 directionSh = shEvaluateL2(sample.direction);
+			vec3 reconstructedValue = shDot(sh, directionSh);
+			vec3 error = sample.value - reconstructedValue;
+			errorSquaredSum += error*error;
+		}
+
+		float sampleWeight = 1.0f / radianceSamples.size();
+		return errorSquaredSum * sampleWeight;
+	}
+
+	inline float shMeanSquareErrorScalar(const SphericalHarmonicsL2RGB& sh, const std::vector<RadianceSample>& radianceSamples)
+	{
+		return dot(shMeanSquareError(sh, radianceSamples), vec3(1.0f / 3.0f));
+	}
 }

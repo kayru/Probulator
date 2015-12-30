@@ -162,6 +162,8 @@ public:
 			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
+
+		m_radianceMse = shMeanSquareErrorScalar(shRadiance, data.m_radianceSamples);
 	}
 };
 
