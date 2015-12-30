@@ -190,6 +190,12 @@ public:
 		return *this;
 	}
 
+	ExperimentSGBase& setAmbientLobeEnabled(bool state)
+	{
+		m_ambientLobeEnabled = state;
+		return *this;
+	}
+
 	void run(SharedData& data) override
 	{
 		generateLobes();
@@ -198,6 +204,7 @@ public:
 		generateIrradianceImage(data);
 	}
 
+	bool m_ambientLobeEnabled = false;
 	u32 m_lobeCount = 1;
 	float m_lambda = 0.0f;
 	float m_brdfLambda = 0.0f;
@@ -219,6 +226,15 @@ protected:
 			m_lobes[lobeIt].p = sgLobeDirections[lobeIt];
 			m_lobes[lobeIt].lambda = m_lambda;
 			m_lobes[lobeIt].mu = vec3(0.0f);
+		}
+
+		if (m_ambientLobeEnabled)
+		{
+			SphericalGaussian lobe;
+			lobe.p = vec3(0.0f, 0.0f, 1.0f);
+			lobe.lambda = 0.0f; // cover entire sphere
+			lobe.mu = vec3(0.0f);
+			m_lobes.push_back(lobe);
 		}
 	}
 
@@ -419,6 +435,11 @@ int main(int argc, char** argv)
 
 	addExperiment<ExperimentSGLS>(experiments, "Spherical Gaussians [Least Squares]", "SGLS")
 		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
+		.setLobeCountAndLambda(lobeCount, lambda);
+
+	addExperiment<ExperimentSGLS>(experiments, "Spherical Gaussians [Least Squares + Ambient]", "SGLSA")
+		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
+		.setAmbientLobeEnabled(true)
 		.setLobeCountAndLambda(lobeCount, lambda);
 
 	addExperiment<ExperimentSGNNLS>(experiments, "Spherical Gaussians [Non-Negative Least Squares]", "SGNNLS")
