@@ -125,8 +125,8 @@ namespace Probulator
 
 		bool readHdr(const char* filename);
 
-		void writeHdr(const char* filename);
-		void writePng(const char* filename);
+		void writeHdr(const char* filename) const;
+		void writePng(const char* filename) const;
 
 		void paste(const Image& src, ivec2 pos);
 	};

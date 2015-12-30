@@ -11,7 +11,7 @@
 
 namespace Probulator
 {
-	void Image::writePng(const char* filename)
+	void Image::writePng(const char* filename) const
 	{
 		if (m_pixels.empty()) return;
 		std::vector<u32> imageLdr(m_size.x * m_size.y);
@@ -67,7 +67,7 @@ namespace Probulator
 		return true;
 	}
 
-	void Image::writeHdr(const char* filename)
+	void Image::writeHdr(const char* filename) const
 	{
 		if (m_pixels.empty()) return;
 		stbi_write_hdr(filename, m_size.x, m_size.y, 4, data());
