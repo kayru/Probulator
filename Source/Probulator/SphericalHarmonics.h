@@ -20,6 +20,8 @@ namespace Probulator
 	typedef SphericalHarmonicsT<vec3, 1> SphericalHarmonicsL1RGB;
 	typedef SphericalHarmonicsT<vec3, 2> SphericalHarmonicsL2RGB;
 
+	template <typename T, size_t L> 
+	SphericalHarmonicsT<T, L> shEvaluate(vec3 p);
 	SphericalHarmonicsL1 shEvaluateL1(vec3 p);
 	SphericalHarmonicsL2 shEvaluateL2(vec3 p);
 	float shEvaluateDiffuseL2(const SphericalHarmonicsL2& sh, vec3 n);
@@ -86,6 +88,33 @@ namespace Probulator
 		sh[8] = c5 * (p.x * p.x - p.y * p.y); // Y2+2
 
 		return sh;
+	}
+
+	template <> inline SphericalHarmonicsT<float, 1> shEvaluate<float, 1>(vec3 p)
+	{
+		return shEvaluateL1(p);
+	}
+
+	template <> inline SphericalHarmonicsT<float, 2> shEvaluate<float, 2>(vec3 p)
+	{
+		return shEvaluateL2(p);
+	}
+
+	inline float shEvaluateDiffuseL1Geomerics(const SphericalHarmonicsL1& sh, const vec3& n)
+	{
+		// http://www.geomerics.com/wp-content/uploads/2015/08/CEDEC_Geomerics_ReconstructingDiffuseLighting1.pdf
+
+		float R0 = sh[0];
+
+		vec3 R1 = 0.5f * vec3(sh[3], sh[1], sh[2]);
+		float lenR1 = length(R1);
+
+		float q = 0.5f * (1.0f + dot(R1 / lenR1, n));
+
+		float p = 1.0f + 2.0f * lenR1 / R0;
+		float a = (1.0f - lenR1 / R0) / (1.0f + lenR1 / R0);
+
+		return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
 	}
 
 	template <typename T>
@@ -165,15 +194,16 @@ namespace Probulator
 		sh[8] *= scale(2);
 	}
 
-	inline vec3 shMeanSquareError(const SphericalHarmonicsL2RGB& sh, const std::vector<RadianceSample>& radianceSamples)
+	template <typename T, size_t L>
+	inline T shMeanSquareError(const SphericalHarmonicsT<T, L>& sh, const std::vector<RadianceSample>& radianceSamples)
 	{
-		vec3 errorSquaredSum = vec3(0.0f);
+		T errorSquaredSum = T(0.0f);
 
 		for (const RadianceSample& sample : radianceSamples)
 		{
-			SphericalHarmonicsL2 directionSh = shEvaluateL2(sample.direction);
-			vec3 reconstructedValue = shDot(sh, directionSh);
-			vec3 error = sample.value - reconstructedValue;
+			auto directionSh = shEvaluate<float, L>(sample.direction);
+			auto reconstructedValue = shDot(sh, directionSh);
+			auto error = sample.value - reconstructedValue;
 			errorSquaredSum += error*error;
 		}
 
@@ -181,29 +211,9 @@ namespace Probulator
 		return errorSquaredSum * sampleWeight;
 	}
 
-	inline float shMeanSquareErrorScalar(const SphericalHarmonicsL2RGB& sh, const std::vector<RadianceSample>& radianceSamples)
+	template <typename T, size_t L>
+	inline float shMeanSquareErrorScalar(const SphericalHarmonicsT<T, L>& sh, const std::vector<RadianceSample>& radianceSamples)
 	{
-		return dot(shMeanSquareError(sh, radianceSamples), vec3(1.0f / 3.0f));
-	}
-
-	inline vec3 shMeanSquareError(const SphericalHarmonicsL1RGB& sh, const std::vector<RadianceSample>& radianceSamples)
-	{
-		vec3 errorSquaredSum = vec3(0.0f);
-
-		for (const RadianceSample& sample : radianceSamples)
-		{
-			SphericalHarmonicsL1 directionSh = shEvaluateL1(sample.direction);
-			vec3 reconstructedValue = shDot(sh, directionSh);
-			vec3 error = sample.value - reconstructedValue;
-			errorSquaredSum += error*error;
-		}
-
-		float sampleWeight = 1.0f / radianceSamples.size();
-		return errorSquaredSum * sampleWeight;
-	}
-
-	inline float shMeanSquareErrorScalar(const SphericalHarmonicsL1RGB& sh, const std::vector<RadianceSample>& radianceSamples)
-	{
-		return dot(shMeanSquareError(sh, radianceSamples), vec3(1.0f / 3.0f));
+		return dot(shMeanSquareError(sh, radianceSamples), T(1.0f / 3.0f));
 	}
 }
