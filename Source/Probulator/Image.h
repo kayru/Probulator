@@ -13,6 +13,10 @@ namespace Probulator
 	{
 	public:
 
+		typedef std::vector<PixelType> PixelArray;
+		typedef typename PixelArray::iterator PixelIterator;
+		typedef typename PixelArray::const_iterator PixelConstIterator;
+
 		ImageBase()
 			: m_size(0, 0)
 		{}
@@ -35,6 +39,15 @@ namespace Probulator
 		u32 getPixelCount() const { return m_size.x * m_size.y; }
 		u64	getSizeBytes() const { return m_pixels.size() * sizeof(PixelType); }
 		u64 getStrideBytes() const { return m_size.x * sizeof(PixelType); }
+
+		PixelType* getPixels() { return m_pixels.data(); };
+		const PixelType* getPixels() const { return m_pixels.data(); };
+
+		PixelIterator begin() { return m_pixels.begin(); }
+		PixelIterator end() { return m_pixels.end(); }
+
+		const PixelConstIterator begin() const { return m_pixels.cbegin(); }
+		const PixelConstIterator end() const { return m_pixels.cend(); }
 
 		const PixelType& at(u32 x, u32 y) const { return m_pixels[x + m_size.x * y]; }
 		PixelType& at(u32 x, u32 y) { return m_pixels[x + m_size.x * y]; }
@@ -99,7 +112,7 @@ namespace Probulator
 	protected:
 
 		ivec2 m_size;
-		std::vector<PixelType> m_pixels;
+		PixelArray m_pixels;
 	};
 
 	class Image : public ImageBase<vec4>
