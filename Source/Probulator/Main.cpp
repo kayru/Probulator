@@ -9,6 +9,7 @@
 #include "SGFitGeneticAlgorithm.h"
 #include "SGFitLeastSquares.h"
 #include "Compute.h"
+#include "DiscreteDistribution.h"
 
 #include <fstream>
 #include <memory>
@@ -82,6 +83,13 @@ public:
 
 	virtual ~Experiment() {};
 
+
+	Experiment& setEnabled(bool state)
+	{
+		m_enabled = state;
+		return *this;
+	}
+
 	// Experiment metadata
 
 	std::string m_name;
@@ -103,33 +111,124 @@ public:
 
 	void run(SharedData& data) override
 	{
+		const ivec2 imageSize = data.m_outputSize;
+		const ivec2 imageSizeMinusOne = imageSize - 1;
+		const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
+
 		m_radianceImage = data.m_radianceImage;
 		m_radianceMse = 0.0f;
 
 		m_irradianceImage = Image(data.m_outputSize);
 		m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
 		{
-			vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(m_irradianceImage.getSize() - ivec2(1));
+			vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * imageSizeMinusOneRcp;
 			vec3 direction = latLongTexcoordToCartesian(uv);
 			mat3 basis = makeOrthogonalBasis(direction);
-			vec3 sample = vec3(0.0f);
+			vec3 accum = vec3(0.0f);
 			for (u32 sampleIt = 0; sampleIt < m_hemisphereSampleCount; ++sampleIt)
 			{
 				vec2 sampleUv = sampleHammersley(sampleIt, m_hemisphereSampleCount);
 				vec3 hemisphereDirection = sampleCosineHemisphere(sampleUv);
 				vec3 sampleDirection = basis * hemisphereDirection;
-				sample += (vec3)m_radianceImage.sampleNearest(cartesianToLatLongTexcoord(sampleDirection));
+				accum += (vec3)m_radianceImage.sampleNearest(cartesianToLatLongTexcoord(sampleDirection));
 			}
 
-			sample /= m_hemisphereSampleCount;
+			accum /= m_hemisphereSampleCount;
 
-			pixel = vec4(sample, 1.0f);
+			pixel = vec4(accum, 1.0f);
 		});
 	}
 
 	ExperimentMC& setHemisphereSampleCount(u32 v) { m_hemisphereSampleCount = v; return *this; }
 
 	u32 m_hemisphereSampleCount = 1000;
+};
+
+static float latLongTexelArea(ivec2 pos, ivec2 imageSize)
+{
+	vec2 uv0 = vec2(pos) / vec2(imageSize);
+	vec2 uv1 = vec2(pos + 1) / vec2(imageSize);
+
+	float theta0 = pi*(uv0.x*2.0f - 1.0f);
+	float theta1 = pi*(uv1.x*2.0f - 1.0f);
+
+	float phi0 = pi*(uv0.y - 0.5f);
+	float phi1 = pi*(uv1.y - 0.5f);
+
+	return abs(theta1 - theta0) * abs(sin(phi1) - sin(phi0));
+}
+
+class ExperimentMCIS : public Experiment
+{
+public:
+
+	void run(SharedData& data) override
+	{
+		m_radianceImage = data.m_radianceImage;
+		m_radianceMse = 0.0f;
+
+		const ivec2 imageSize = data.m_outputSize;
+		const ivec2 imageSizeMinusOne = imageSize - 1;
+		const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
+
+		std::vector<float> texelWeights;
+		std::vector<float> texelAreas;
+		float weightSum = 0.0;
+		data.m_radianceImage.forPixels2D([&](const vec4& p, ivec2 pixelPos)
+		{
+			float area = latLongTexelArea(pixelPos, imageSize);
+
+			float intensity = dot(vec3(1.0f / 3.0f), (vec3)p);
+			float weight = intensity * area;
+
+			weightSum += weight;
+			texelWeights.push_back(weight);
+			texelAreas.push_back(area);
+		});
+
+		DiscreteDistribution<float> discreteDistribution(texelWeights.data(), texelWeights.size(), weightSum);
+
+		m_irradianceImage = Image(data.m_outputSize);
+		m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
+		{
+			u32 pixelIndex = pixelPos.x + pixelPos.y * m_irradianceImage.getWidth();
+			u32 seed = m_scramblingEnabled ? pixelIndex : 0;
+			std::mt19937 rng(seed);
+
+			vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * imageSizeMinusOneRcp;
+			vec3 normal = latLongTexcoordToCartesian(uv);
+			vec3 accum = vec3(0.0f);
+			for (u32 sampleIt = 0; sampleIt < m_sampleCount; ++sampleIt)
+			{
+				u32 sampleIndex = discreteDistribution(rng);
+				float sampleProbability = texelWeights[sampleIndex] / weightSum;
+				vec3 sampleDirection = data.m_directionImage.at(sampleIndex);
+				float cosTerm = dotMax0(normal, sampleDirection);
+				float sampleArea = (float)texelAreas[sampleIndex];
+				vec3 sampleRadiance = (vec3)m_radianceImage.at(sampleIndex) * sampleArea;
+				accum += sampleRadiance * cosTerm / sampleProbability;
+			}
+
+			accum /= m_sampleCount * pi;
+
+			pixel = vec4(accum, 1.0f);
+		});
+	}
+
+	ExperimentMCIS& setSampleCount(u32 v)
+	{
+		m_sampleCount = v;
+		return *this;
+	}
+
+	ExperimentMCIS& setScramblingEnabled(bool state)
+	{
+		m_scramblingEnabled = state;
+		return *this;
+	}
+
+	u32 m_sampleCount = 1000;
+	bool m_scramblingEnabled = false;
 };
 
 class ExperimentSHL1 : public Experiment
@@ -485,8 +584,18 @@ int main(int argc, char** argv)
 
 	ExperimentList experiments;
 
+	addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling]", "MCIS")
+		.setSampleCount(5000)
+		.setScramblingEnabled(false); // prefer errors due to correlation instead of noise due to scrambling
+
+	addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling, Scrambled]", "MCISS")
+		.setSampleCount(5000)
+		.setScramblingEnabled(true)
+		.setEnabled(false); // disabled by default, since MCIS mode is superior
+
 	addExperiment<ExperimentMC>(experiments, "Monte Carlo", "MC")
-		.setHemisphereSampleCount(5000);
+		.setHemisphereSampleCount(5000)
+		.setEnabled(false); // disabled by default, since MCIS mode is superior
 
 	addExperiment<ExperimentSHL1>(experiments, "Spherical Harmonics L1", "SHL1");
 	addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
