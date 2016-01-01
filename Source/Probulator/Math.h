@@ -203,7 +203,7 @@ namespace Probulator
 	{
 		float phi = v * twoPi;
 		float cosTheta = sqrt(u);
-		float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+		float sinTheta = sqrt(1.0f - u);
 
 		float sinPhi, cosPhi;
 		sinCos(phi, &sinPhi, &cosPhi);
