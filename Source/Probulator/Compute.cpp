@@ -1,5 +1,6 @@
 #include "Compute.h"
 
+#ifdef USE_OPENCL
 #include <stdio.h>
 #include <assert.h>
 
@@ -135,3 +136,5 @@ namespace Probulator
 		clReleaseProgram(m_program);
 	}
 }
+#endif
+

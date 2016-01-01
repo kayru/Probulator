@@ -4,16 +4,20 @@ elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 	add_definitions(-std=c++11 -stdlib=libc++)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR
+   ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	find_path(tbbinclude tbb)
 	include_directories(${tbbinclude})
 endif()
 
-find_package(OpenCL REQUIRED)
+find_package(OpenCL)
 
-include_directories(
-	${OpenCL_INCLUDE_DIRS}
-)
+if(OpenCL_FOUND)
+	add_definitions(-DUSE_OPENCL)
+	include_directories(
+		${OpenCL_INCLUDE_DIRS}
+	)
+endif()
 
 add_executable(Probulator
 	Common.h
@@ -38,11 +42,15 @@ add_executable(Probulator
 	Variance.h
 )
 
-target_link_libraries(Probulator
-	${OpenCL_LIBRARIES}
+if(OpenCL_FOUND)
+	target_link_libraries(Probulator
+		${OpenCL_LIBRARIES}
 )
+endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR
+   ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	find_library(tbb tbb)
 	target_link_libraries(Probulator ${tbb})
 endif()
+

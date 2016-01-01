@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <assert.h>
 
+#ifdef USE_OPENCL
 static const char* g_computeCode =
 R"(
 typedef struct
@@ -80,6 +81,7 @@ __kernel void naiveReduceSum(
 	output[outputIndex] = sum;
 }
 )";
+#endif
 
 namespace Probulator
 {
@@ -150,9 +152,10 @@ namespace Probulator
 		u32 seed,
 		bool verbose)
 	{
+#ifdef USE_OPENCL
 		ComputeKernel errorKernel(g_computeCode, "computeErrors");
 		ComputeKernel reduceSumKernel(g_computeCode, "naiveReduceSum");
-
+#endif
 		std::mt19937 rng(seed);
 
 		std::vector<SgBasis> population;
@@ -174,6 +177,7 @@ namespace Probulator
 		std::vector<double> populationFitness(populationCount);
 		std::vector<u32> sortedSolutionIndices(populationCount);
 
+#ifdef USE_OPENCL
 		cl_int clError = CL_SUCCESS;
 		cl_mem populationBuffer = clCreateBuffer(
 			g_computeContext, CL_MEM_READ_ONLY,
@@ -198,12 +202,13 @@ namespace Probulator
 			sizeof(float)*errorBufferCpu.size(),
 			nullptr, &clError);
 		assert(clError == CL_SUCCESS);
+#endif
 
 		for (u32 generationIt = 0; generationIt < generationCount; generationIt++)
 		{
 			std::swap(population, nextPopulation);
 
-#if 0
+#ifndef USE_OPENCL
 			parallelFor(0u, populationCount, [&](u32 basisIt)
 			{
 				populationError[basisIt] = errorFunction(population[basisIt], samples);
@@ -307,10 +312,12 @@ namespace Probulator
 			}
 		}
 
+#ifdef USE_OPENCL
 		clFinish(g_computeQueue);
 		clReleaseMemObject(populationBuffer);
 		clReleaseMemObject(radianceBuffer);
 		clReleaseMemObject(errorBuffer);
+#endif
 
 		return population[sortedSolutionIndices.front()];
 	}

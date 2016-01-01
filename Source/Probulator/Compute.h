@@ -1,5 +1,6 @@
 #pragma once
 
+#ifdef USE_OPENCL
 #ifdef __APPLE__
 #include "OpenCL/opencl.h"
 #else
@@ -63,3 +64,5 @@ namespace Probulator
 	extern cl_context g_computeContext;
 	extern cl_command_queue g_computeQueue;
 }
+#endif
+
