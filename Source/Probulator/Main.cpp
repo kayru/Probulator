@@ -83,10 +83,15 @@ public:
 
 	virtual ~Experiment() {};
 
-
 	Experiment& setEnabled(bool state)
 	{
 		m_enabled = state;
+		return *this;
+	}
+
+	Experiment& setUseAsReference(bool state)
+	{
+		m_useAsReference = state;
 		return *this;
 	}
 
@@ -95,6 +100,7 @@ public:
 	std::string m_name;
 	std::string m_suffix;
 	bool m_enabled = true;
+	bool m_useAsReference = false;
 
 	// Common experiment outputs
 
@@ -493,12 +499,29 @@ public:
 
 void generateReportHtml(const ExperimentList& experiments, const char* filename)
 {
+	Experiment* referenceMode = nullptr;
+	for(const auto& it : experiments)
+	{
+		if (it->m_useAsReference)
+		{
+			referenceMode = it.get();
+			break;
+		}
+	}
+
+	const int errorScale = 5;
+
 	std::ofstream f;
 	f.open(filename);
 	f << "<!DOCTYPE html>" << std::endl;
 	f << "<html>" << std::endl;
 	f << "<table>" << std::endl;
-	f << "<tr><td>Radiance</td><td>Irradiance</td><td>Mode</td></tr>" << std::endl;
+	f << "<tr><td>Radiance</td><td>Irradiance</td>";
+	if (referenceMode)
+	{
+		f << "<td>Irradiance Error (x" << errorScale << ")</td>";
+	}
+	f << "<td>Mode</td></tr>" << std::endl;
 	for (const auto& it : experiments)
 	{
 		if (!it->m_enabled)
@@ -513,16 +536,60 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 		it->m_irradianceImage.writePng(irradianceFilename.str().c_str());
 
 		f << "<tr>";
+
 		f << "<td valign=\"top\"><img src=\"" << radianceFilename.str() << "\"/>";
-		if (it->m_radianceMse != 0.0f)
+		if (referenceMode && referenceMode != it.get())
 		{
 			f << "<br/>";
+			vec4 mse = imageMeanSquareError(referenceMode->m_radianceImage, it->m_radianceImage);
+			float mseScalar = dot(vec3(1.0f/3.0f), (vec3)mse);
 			f << "MSE: " << it->m_radianceMse << " ";
-			f << "RMS: " << sqrtf(it->m_radianceMse);
+			f << "RMS: " << sqrtf(mseScalar);
 		}
 		f << "</td>";
-		f << "<td valign=\"top\"><img src=\"" << irradianceFilename.str() << "\"/></td>";
-		f << "<td>" << it->m_name << "</td>";
+
+		f << "<td valign=\"top\"><img src=\"" << irradianceFilename.str() << "\"/>";
+		if (referenceMode && referenceMode != it.get())
+		{
+			f << "<br/>";
+			vec4 mse = imageMeanSquareError(referenceMode->m_irradianceImage, it->m_irradianceImage);
+			float mseScalar = dot(vec3(1.0f/3.0f), (vec3)mse);
+			f << "MSE: " << mseScalar << " ";
+			f << "RMS: " << sqrtf(mseScalar);
+		}
+		f << "</td>";
+
+		if (referenceMode)
+		{
+			if (referenceMode != it.get())
+			{
+				std::ostringstream irradianceErrorFilename;
+				irradianceErrorFilename << "irradianceDiff" << it->m_suffix << ".png";
+				it->m_radianceImage.writePng(irradianceErrorFilename.str().c_str());
+
+				Image errorImage = imageDifference(referenceMode->m_irradianceImage, it->m_irradianceImage);
+				for (vec4& pixel : errorImage)
+				{
+					pixel = abs(pixel * 5.0f);
+					pixel.w = 1.0f;
+				}
+				errorImage.writePng(irradianceErrorFilename.str().c_str());
+
+				f << "<td valign=\"top\"><img src=\"" << irradianceErrorFilename.str() << "\"/></td>";
+			}
+			else
+			{
+				f << "<td><center><b>N/A</b></center></td>";
+			}
+		}
+
+		f << "<td>" << it->m_name;
+		if (referenceMode == it.get())
+		{
+			f << "<br><b>Reference</b>";
+		}
+		f << "</td>";
+
 		f << "</tr>";
 		f << std::endl;
 	}
@@ -586,7 +653,8 @@ int main(int argc, char** argv)
 
 	addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling]", "MCIS")
 		.setSampleCount(5000)
-		.setScramblingEnabled(false); // prefer errors due to correlation instead of noise due to scrambling
+		.setScramblingEnabled(false) // prefer errors due to correlation instead of noise due to scrambling
+		.setUseAsReference(true); // other experiments will be compared against this
 
 	addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling, Scrambled]", "MCISS")
 		.setSampleCount(5000)
