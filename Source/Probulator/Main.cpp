@@ -509,8 +509,6 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 		}
 	}
 
-	const int errorScale = 5;
-
 	std::ofstream f;
 	f.open(filename);
 	f << "<!DOCTYPE html>" << std::endl;
@@ -519,7 +517,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 	f << "<tr><td>Radiance</td><td>Irradiance</td>";
 	if (referenceMode)
 	{
-		f << "<td>Irradiance Error (x" << errorScale << ")</td>";
+		f << "<td>Irradiance Error (sMAPE)</td>";
 	}
 	f << "<td>Mode</td></tr>" << std::endl;
 	for (const auto& it : experiments)
@@ -564,13 +562,12 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 			if (referenceMode != it.get())
 			{
 				std::ostringstream irradianceErrorFilename;
-				irradianceErrorFilename << "irradianceDiff" << it->m_suffix << ".png";
+				irradianceErrorFilename << "irradianceError" << it->m_suffix << ".png";
 				it->m_radianceImage.writePng(irradianceErrorFilename.str().c_str());
 
-				Image errorImage = imageDifference(referenceMode->m_irradianceImage, it->m_irradianceImage);
+				Image errorImage = imageSymmetricAbsolutePercentageError(referenceMode->m_irradianceImage, it->m_irradianceImage);
 				for (vec4& pixel : errorImage)
 				{
-					pixel = abs(pixel * 5.0f);
 					pixel.w = 1.0f;
 				}
 				errorImage.writePng(irradianceErrorFilename.str().c_str());

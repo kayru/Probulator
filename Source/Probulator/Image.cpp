@@ -106,6 +106,25 @@ namespace Probulator
 		return result;
 	}
 
+	Image imageSymmetricAbsolutePercentageError(const Image& reference, const Image& image)
+	{
+		ivec2 size = min(reference.getSize(), image.getSize());
+
+		Image result(size);
+
+		for (int y = 0; y < size.y; ++y)
+		{
+			for (int x = 0; x < size.x; ++x)
+			{
+				vec4 absDiff = abs(reference.at(x, y) - image.at(x, y));
+				vec4 sum = reference.at(x, y) + image.at(x, y);
+				result.at(x, y) = absDiff / sum;
+			}
+		}
+
+		return result;
+	}
+
 	vec4 imageMeanSquareError(const Image& reference, const Image& image)
 	{
 		vec4 errorSquaredSum = vec4(0.0f);

@@ -146,5 +146,6 @@ namespace Probulator
 
 	Image imageResize(const Image& input, ivec2 newSize);
 	Image imageDifference(const Image& reference, const Image& image);
+	Image imageSymmetricAbsolutePercentageError(const Image& reference, const Image& image);
 	vec4 imageMeanSquareError(const Image& reference, const Image& image);
 }
