@@ -621,7 +621,8 @@ int main(int argc, char** argv)
 	addExperiment<ExperimentSGGA>(experiments, "Spherical Gaussians [Genetic Algorithm]", "SGGA")
 		.setPopulationAndGenerationCount(50, 2000)
 		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
-		.setLobeCountAndLambda(lobeCount, lambda);
+		.setLobeCountAndLambda(lobeCount, lambda)
+		.setEnabled(false); // disabled by default, as it requires *very* long time to converge
 
 	if (argc > 2)
 	{
