@@ -88,4 +88,40 @@ namespace Probulator
 		return output;
 	}
 
+	Image imageDifference(const Image& reference, const Image& image)
+	{
+		ivec2 size = min(reference.getSize(), image.getSize());
+
+		Image result(size);
+
+		for (int y = 0; y < size.y; ++y)
+		{
+			for (int x = 0; x < size.x; ++x)
+			{
+				vec4 error = reference.at(x, y) - image.at(x, y);
+				result.at(x, y) = error;
+			}
+		}
+		
+		return result;
+	}
+
+	vec4 imageMeanSquareError(const Image& reference, const Image& image)
+	{
+		vec4 errorSquaredSum = vec4(0.0f);
+
+		ivec2 size = min(reference.getSize(), image.getSize());
+		for (int y = 0; y < size.y; ++y)
+		{
+			for (int x = 0; x < size.x; ++x)
+			{
+				vec4 error = reference.at(x, y) - image.at(x, y);
+				errorSquaredSum += error * error;
+			}
+		}
+
+		errorSquaredSum /= size.x * size.y;
+
+		return errorSquaredSum;
+	}
 }
