@@ -106,7 +106,6 @@ public:
 
 	Image m_radianceImage;
 	Image m_irradianceImage;
-	float m_radianceMse = std::numeric_limits<float>::infinity();
 };
 
 typedef std::vector<std::unique_ptr<Experiment>> ExperimentList;
@@ -122,7 +121,6 @@ public:
 		const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
 
 		m_radianceImage = data.m_radianceImage;
-		m_radianceMse = 0.0f;
 
 		m_irradianceImage = Image(data.m_outputSize);
 		m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
@@ -171,7 +169,6 @@ public:
 	void run(SharedData& data) override
 	{
 		m_radianceImage = data.m_radianceImage;
-		m_radianceMse = 0.0f;
 
 		const ivec2 imageSize = data.m_outputSize;
 		const ivec2 imageSizeMinusOne = imageSize - 1;
@@ -263,8 +260,6 @@ public:
 			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL1(shRadiance, direction) / pi);
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
-
-		m_radianceMse = shMeanSquareErrorScalar(shRadiance, data.m_radianceSamples);
 	}
 };
 
@@ -303,8 +298,6 @@ public:
 			}
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
-
-		m_radianceMse = shMeanSquareErrorScalar(shRadiance, data.m_radianceSamples);
 	}
 };
 
@@ -334,8 +327,6 @@ public:
 			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
-
-		m_radianceMse = shMeanSquareErrorScalar(shRadiance, data.m_radianceSamples);
 	}
 };
 
@@ -413,8 +404,6 @@ protected:
 			vec3 sampleSg = sgBasisEvaluate(m_lobes, direction);
 			pixel = vec4(sampleSg, 1.0f);
 		});
-
-		m_radianceMse = sgBasisMeanSquareErrorScalar(m_lobes, data.m_radianceSamples);
 	}
 
 	void generateIrradianceImage(const SharedData& data)
@@ -541,7 +530,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 			f << "<br/>";
 			vec4 mse = imageMeanSquareError(referenceMode->m_radianceImage, it->m_radianceImage);
 			float mseScalar = dot(vec3(1.0f/3.0f), (vec3)mse);
-			f << "MSE: " << it->m_radianceMse << " ";
+			f << "MSE: " << mseScalar << " ";
 			f << "RMS: " << sqrtf(mseScalar);
 		}
 		f << "</td>";
