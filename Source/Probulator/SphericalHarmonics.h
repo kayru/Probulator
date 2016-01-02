@@ -24,7 +24,6 @@ namespace Probulator
 	SphericalHarmonicsL1 shEvaluateL1(vec3 p);
 	SphericalHarmonicsL2 shEvaluateL2(vec3 p);
 	float shEvaluateDiffuseL2(const SphericalHarmonicsL2& sh, vec3 n);
-	void shReduceRingingL2(SphericalHarmonicsL2& sh, float lambda);
 
 	inline size_t shSize(size_t L) { return (L + 1)*(L + 1); }
 
@@ -225,19 +224,15 @@ namespace Probulator
 		// From Peter-Pike Sloan's Stupid SH Tricks
 		// http://www.ppsloan.org/publications/StupidSH36.pdf
 
-		auto scale = [lambda](u32 l) { return 1.0f / (1.0f + lambda * l * l * (l + 1.0f) * (l + 1.0f)); };
-
-		sh[0] *= scale(0);
-
-		sh[1] *= scale(1);
-		sh[2] *= scale(1);
-		sh[3] *= scale(1);
-
-		sh[4] *= scale(2);
-		sh[5] *= scale(2);
-		sh[6] *= scale(2);
-		sh[7] *= scale(2);
-		sh[8] *= scale(2);
+		int i = 0;
+		for(int l = 0; l <= (int)L; ++l)
+		{
+			float s = 1.0f / (1.0f + lambda * l * l * (l + 1.0f) * (l + 1.0f));
+			for(int m = -l; m <= l; ++m)
+			{
+				sh[i++] *= s;
+			}
+		}
 	}
 
 	template <typename T, size_t L>

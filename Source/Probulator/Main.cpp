@@ -248,6 +248,11 @@ public:
 			shAddWeighted(shRadiance, shEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
 		}
 
+		if (m_lambda != 0.0f)
+		{
+			shReduceRinging<vec3, L>(shRadiance, m_lambda);
+		}
+
 		m_radianceImage = Image(data.m_outputSize);
 		m_irradianceImage = Image(data.m_outputSize);
 
@@ -262,6 +267,14 @@ public:
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
 	}
+
+	ExperimentSH<L>& setLambda(float v)
+	{
+		m_lambda = v;
+		return *this;
+	}
+
+	float m_lambda = 0.0f;
 };
 
 class ExperimentSHL1Geomerics : public Experiment
@@ -463,7 +476,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 	Experiment* referenceMode = nullptr;
 	for(const auto& it : experiments)
 	{
-		if (it->m_useAsReference)
+		if (it->m_useAsReference && it->m_enabled)
 		{
 			referenceMode = it.get();
 			break;
