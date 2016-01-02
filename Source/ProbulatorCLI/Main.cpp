@@ -203,7 +203,7 @@ public:
 			vec3 accum = vec3(0.0f);
 			for (u32 sampleIt = 0; sampleIt < m_sampleCount; ++sampleIt)
 			{
-				u32 sampleIndex = discreteDistribution(rng);
+				u32 sampleIndex = (u32)discreteDistribution(rng);
 				float sampleProbability = texelWeights[sampleIndex] / weightSum;
 				vec3 sampleDirection = data.m_directionImage.at(sampleIndex);
 				float cosTerm = dotMax0(normal, sampleDirection);

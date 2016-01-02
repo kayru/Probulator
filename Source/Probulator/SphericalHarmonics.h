@@ -89,7 +89,7 @@ namespace Probulator
 		{
 			result[i++] =  sqrt(15.0f/(4.0f*pi))*y*x;
 			result[i++] = -sqrt(15.0f/(4.0f*pi))*y*z;
-			result[i++] =  sqrt(5.0f/(16.0f*pi))*(3.0*z2-1.0f);
+			result[i++] =  sqrt(5.0f/(16.0f*pi))*(3.0f*z2-1.0f);
 			result[i++] = -sqrt(15.0f/(4.0f*pi))*x*z;
 			result[i++] =  sqrt(15.0f/(16.0f*pi))*(x2-y2);			
 		}
