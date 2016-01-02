@@ -6,4 +6,4 @@ add_executable(ProbulatorGUI
 	Renderer.h
 	Renderer.cpp
 )
-target_link_libraries(ProbulatorGUI Probulator gl3w glfw)
+target_link_libraries(ProbulatorGUI Probulator gl3w glfw imgui)

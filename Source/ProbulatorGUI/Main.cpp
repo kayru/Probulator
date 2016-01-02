@@ -8,6 +8,9 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+#include <imgui_impl_glfw_gl3.h>
+
 #include <stdio.h>
 #include <memory>
 
@@ -24,6 +27,11 @@ public:
 
 	}
 
+	void updateImGui()
+	{
+		ImGui::ShowTestWindow();
+	}
+
 	void render()
 	{
 		glViewport(0, 0, m_windowSize.x, m_windowSize.y);
@@ -36,6 +44,8 @@ public:
 		{
 			m_blitter.drawTexture2D(*m_envmapTexture);
 		}
+
+		ImGui::Render();
 	}
 
 	void setWindowSize(ivec2 size)
@@ -64,13 +74,6 @@ static void cbWindowSize(GLFWwindow* window, int w, int h)
 {
 	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 	app->setWindowSize(ivec2(w, h));
-}
-
-static void cbRefresh(GLFWwindow * window)
-{
-	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
-	app->render();
-	glfwSwapBuffers(window);
 }
 
 int main(int argc, char** argv)
@@ -103,25 +106,32 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
+	ImGui_ImplGlfwGL3_Init(window, true);
+
 	ProbulatorGui* app = new ProbulatorGui();
 	app->setWindowSize(defaultWindowSize);
 
 	glfwSetWindowUserPointer(window, app);
 	glfwSetWindowSizeCallback(window, cbWindowSize);
-	glfwSetWindowRefreshCallback(window, cbRefresh);
 
 	glfwSwapInterval(1); // vsync ON
 
 	do
 	{
+		ImGui_ImplGlfwGL3_NewFrame();
+
+		app->updateImGui();
 		app->render();
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	} while(!glfwWindowShouldClose(window));
 
 	delete app;
 
+	ImGui_ImplGlfwGL3_Shutdown();
+
 	glfwTerminate();
-	
+
 	return 0;
 }

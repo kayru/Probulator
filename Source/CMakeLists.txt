@@ -32,5 +32,6 @@ add_subdirectory(ProbulatorCLI)
 include_directories(
 	External/gl3w/include
 	External/glfw/include
+	External/imgui
 )
 add_subdirectory(ProbulatorGUI)
