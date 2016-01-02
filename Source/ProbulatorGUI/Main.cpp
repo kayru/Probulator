@@ -1,5 +1,9 @@
-#include <Probulator/Common.h>
+#include "Common.h"
+#include "Renderer.h"
+#include "Blitter.h"
+
 #include <Probulator/Math.h>
+#include <Probulator/Image.h>
 
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -7,14 +11,12 @@
 #include <stdio.h>
 #include <memory>
 
-using namespace Probulator;
-
 class ProbulatorGui
 {
 public:
 	ProbulatorGui()
 	{
-
+		loadResources();
 	}
 
 	~ProbulatorGui()
@@ -29,6 +31,8 @@ public:
 		const vec3 clearColor = vec3(0.1f, 0.2f, 0.3f);
 		glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		m_blitter.drawTexture2D(m_envmapTexture.get());
 	}
 
 	void setWindowSize(ivec2 size)
@@ -36,7 +40,18 @@ public:
 		m_windowSize = size;
 	}
 
+	void loadResources()
+	{
+		bool imageLoaded = m_envmapImage.readHdr("Data/Probes/wells.hdr");
+		assert(imageLoaded);
+
+		m_envmapTexture = createTextureFromImage(m_envmapImage);
+	}
+
 	ivec2 m_windowSize = ivec2(1280, 720);
+	Image m_envmapImage;
+	TexturePtr m_envmapTexture;
+	Blitter m_blitter;
 };
 
 static void cbWindowSize(GLFWwindow* window, int w, int h)
