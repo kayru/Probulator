@@ -26,6 +26,7 @@ struct VertexElement
 {
 	VertexSemantic semantic = VertexSemantic_Invalid;
 	u32 dataType = GL_FLOAT;
+	GLboolean normalized = GL_FALSE;
 	u32 componentCount = 1;
 	u32 offset = 0;
 };
@@ -37,12 +38,13 @@ struct VertexDeclaration
 	u32 elementCount = 0;
 	VertexElement elements[MaxElements];
 
-	VertexDeclaration& add(VertexSemantic semantic, u32 dataType, u32 componentCount, u32 offset)
+	VertexDeclaration& add(VertexSemantic semantic, u32 dataType, GLboolean normalized, u32 componentCount, u32 offset)
 	{
 		assert(elementCount < MaxElements);
 		VertexElement& element = elements[elementCount];
 		element.semantic = semantic;
 		element.dataType = dataType;
+		element.normalized = normalized;
 		element.componentCount = componentCount;
 		element.offset = offset;
 		elementCount++;
@@ -98,6 +100,8 @@ class ShaderProgram : NonCopyable
 {
 public:
 
+	enum { MaxTextures = 8 };
+
 	~ShaderProgram()
 	{
 		glDeleteProgram(m_native);
@@ -108,6 +112,7 @@ public:
 	u32 m_vertexArray = 0;
 	VertexDeclaration m_vertexDeclaration;
 	GLint m_vertexAttributeLocations[VertexDeclaration::MaxElements];
+	GLint m_textureLocations[MaxTextures];
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;
@@ -116,7 +121,8 @@ typedef std::shared_ptr<ShaderProgram> ShaderProgramPtr;
 
 TexturePtr createTextureFromImage(
 	const Image& image,
-	const TextureFilter& filter = TextureFilter());
+	const TextureFilter& filter = TextureFilter(),
+	bool verticalFlip = false);
 
 ShaderPtr createShaderFromSource(u32 type, const char* source);
 
@@ -124,3 +130,6 @@ ShaderProgramPtr createShaderProgram(
 	const Shader& vertexShader,
 	const Shader& pixelShader,
 	const VertexDeclaration& vertexDeclaration);
+
+void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture& texture);
+void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 vertexStride);

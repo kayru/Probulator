@@ -32,7 +32,10 @@ public:
 		glClearColor(clearColor.r, clearColor.g, clearColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		m_blitter.drawTexture2D(m_envmapTexture.get());
+		if (m_envmapTexture)
+		{
+			m_blitter.drawTexture2D(*m_envmapTexture);
+		}
 	}
 
 	void setWindowSize(ivec2 size)
@@ -45,7 +48,10 @@ public:
 		bool imageLoaded = m_envmapImage.readHdr("Data/Probes/wells.hdr");
 		assert(imageLoaded);
 
-		m_envmapTexture = createTextureFromImage(m_envmapImage);
+		m_envmapTexture = createTextureFromImage(
+			m_envmapImage, 
+			makeTextureFilter(GL_CLAMP_TO_BORDER, GL_LINEAR),
+			true);
 	}
 
 	ivec2 m_windowSize = ivec2(1280, 720);
@@ -81,7 +87,7 @@ int main(int argc, char** argv)
 	const ivec2 defaultWindowSize = ivec2(1280, 720);
 	GLFWwindow * window = glfwCreateWindow(
 		defaultWindowSize.x, defaultWindowSize.y,
-		"ProbulatorGUI", nullptr, nullptr);
+		"Probulator GUI", nullptr, nullptr);
 
 	glfwMakeContextCurrent(window);
 

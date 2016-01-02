@@ -3,7 +3,10 @@
 #include <Probulator/Image.h>
 #include <string>
 
-TexturePtr createTextureFromImage(const Image& image, const TextureFilter& filter)
+TexturePtr createTextureFromImage(
+	const Image& image, 
+	const TextureFilter& filter,
+	bool verticalFlip)
 {
 	assert(image.getPixelCount() != 0);
 
@@ -22,28 +25,45 @@ TexturePtr createTextureFromImage(const Image& image, const TextureFilter& filte
 
 	const GLsizei w = image.getWidth();
 	const GLsizei h = image.getHeight();
-	glTexImage2D(type, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, image.data());
+
+	if (verticalFlip)
+	{
+		Image flippedImage(w, h);
+		for (int y = 0; y < h; ++y)
+		{
+			vec4* rowPixelsOut = flippedImage.getPixels() + w*y;
+			const vec4* rowPixelsIn = image.getPixels() + w*(h - 1 - y);
+			memcpy(rowPixelsOut, rowPixelsIn, sizeof(vec4) * w);
+		}
+
+		glTexImage2D(type, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, flippedImage.data());
+	}
+	else
+	{
+		glTexImage2D(type, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, image.data());
+	}
+	
 
 	return result;
 }
 
 const char* toString(VertexSemantic semantic)
 {
-	switch(semantic)
+	switch (semantic)
 	{
-		default:
-		case VertexSemantic_Invalid:
-			return "Invalid";
-		case VertexSemantic_Position:
-			return "Position";
-		case VertexSemantic_TexCoord0:
-			return "TexCoord0";
-		case VertexSemantic_TexCoord1:
-			return "TexCoord1";
-		case VertexSemantic_TexCoord2:
-			return "TexCoord2";
-		case VertexSemantic_TexCoord3:
-			return "TexCoord3";
+	default:
+	case VertexSemantic_Invalid:
+		return "Invalid";
+	case VertexSemantic_Position:
+		return "Position";
+	case VertexSemantic_TexCoord0:
+		return "TexCoord0";
+	case VertexSemantic_TexCoord1:
+		return "TexCoord1";
+	case VertexSemantic_TexCoord2:
+		return "TexCoord2";
+	case VertexSemantic_TexCoord3:
+		return "TexCoord3";
 	}
 }
 
@@ -97,7 +117,7 @@ ShaderProgramPtr createShaderProgram(
 	glGenVertexArrays(1, &result->m_vertexArray);
 	glBindVertexArray(result->m_vertexArray);
 
-	for (u32 i=0; i<vertexDeclaration.elementCount; ++i)
+	for (u32 i = 0; i < vertexDeclaration.elementCount; ++i)
 	{
 		const VertexElement& element = vertexDeclaration.elements[i];
 		const char* semanticName = toString(element.semantic);
@@ -109,10 +129,44 @@ ShaderProgramPtr createShaderProgram(
 		result->m_vertexAttributeLocations[i] = location;
 	}
 
-	for (u32 i=vertexDeclaration.elementCount; i<VertexDeclaration::MaxElements; ++i)
+	for (u32 i = vertexDeclaration.elementCount; i < VertexDeclaration::MaxElements; ++i)
 	{
 		result->m_vertexAttributeLocations[i] = -1;
 	}
 
+	for (u32 i = 0; i < ShaderProgram::MaxTextures; ++i)
+	{
+		char name[] = "Texture#";
+		name[7] = '0' + i;
+		result->m_textureLocations[i] = glGetUniformLocation(result->m_native, name);
+	}
+
 	return result;
+}
+
+void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 vertexStride)
+{
+	glBindVertexArray(shaderProgram.m_vertexArray);
+	for (u32 i = 0; i < shaderProgram.m_vertexDeclaration.elementCount; ++i)
+	{
+		const VertexElement& element = shaderProgram.m_vertexDeclaration.elements[i];
+		glVertexAttribPointer(
+			shaderProgram.m_vertexAttributeLocations[i],
+			element.componentCount,
+			element.dataType,
+			element.normalized,
+			vertexStride,
+			((char*)(nullptr)) + element.offset);
+	}
+}
+
+void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture& texture)
+{
+	GLint location = shaderProgram.m_textureLocations[slotIndex];
+
+	if (location == -1)
+		return;
+
+	glActiveTexture(GL_TEXTURE0 + location);
+	glBindTexture(texture.m_type, texture.m_native);	
 }

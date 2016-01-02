@@ -10,13 +10,13 @@ public:
 	Blitter();
 	~Blitter();
 
-	void drawTexture2D(Texture* texture);
+	void drawTexture2D(const Texture& texture);
 
 private:
 
 	struct Vertex
 	{
-		float position[2];
+		float x, y;
 	};
 
 	u32 m_vertexBuffer = 0;
