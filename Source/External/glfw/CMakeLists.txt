@@ -27,60 +27,42 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif()
 
 set(glfw_src
-	"include/GLFW/glfw3.h"
-	"include/GLFW/glfw3native.h"
-	"src/clipboard.c"
 	"src/context.c"
-	#"src/egl_context.c"
-	#"src/egl_platform.h"
-	"src/gamma.c"
 	"src/init.c"
 	"src/input.c"
-	"src/internal.h"
-	"src/joystick.c"
 	"src/monitor.c"
-	"src/time.c"
 	"src/window.c"
 )
 
 set(glfw_win32_src
 	"src/wgl_context.c"
-	"src/wgl_platform.h"
-	"src/win32_clipboard.c"
-	"src/win32_gamma.c"
 	"src/win32_init.c"
-	"src/win32_joystick.c"
 	"src/win32_monitor.c"
-	"src/win32_platform.h"
 	"src/win32_time.c"
+	"src/win32_tls.c"
 	"src/win32_window.c"
+	"src/winmm_joystick.c"
 )
 
 set(glfw_macosx_src
-	"src/cocoa_clipboard.m"
-	"src/cocoa_gamma.c"
-	"src/cocoa_init.m"
-	"src/cocoa_joystick.m"
-	"src/cocoa_monitor.m"
-	"src/cocoa_platform.h"
-	"src/cocoa_time.c"
-	"src/cocoa_window.m"
 	"src/nsgl_context.m"
-	"src/nsgl_platform.h"
+	"src/cocoa_init.m"
+	"src/cocoa_monitor.m"
+	"src/cocoa_window.m"
+	"src/iokit_joystick.m"
+	"src/mach_time.c"
+	"src/posix_tls.c"
 )
 
 set(glfw_linux_src
 	"src/glx_context.c"
-	"src/glx_platform.h"
-	"src/x11_clipboard.c"
-	"src/x11_gamma.c"
 	"src/x11_init.c"
-	"src/x11_joystick.c"
 	"src/x11_monitor.c"
-	"src/x11_platform.h"
-	"src/x11_time.c"
-	"src/x11_unicode.c"
 	"src/x11_window.c"
+	"src/x11_unicode.c"
+	"src/linux_joystick.c"
+	"src/posix_time.c"
+	"src/posix_tls.c"
 )
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

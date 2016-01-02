@@ -1,5 +1,5 @@
 //========================================================================
-// GLFW 3.0 OS X - www.glfw.org
+// GLFW 3.1 OS X - www.glfw.org
 //------------------------------------------------------------------------
 // Copyright (c) 2009-2010 Camilla Berglund <elmindreda@elmindreda.org>
 //
@@ -24,41 +24,39 @@
 //
 //========================================================================
 
-#ifndef _nsgl_platform_h_
-#define _nsgl_platform_h_
-
+#ifndef _glfw3_nsgl_context_h_
+#define _glfw3_nsgl_context_h_
 
 #define _GLFW_PLATFORM_FBCONFIG
-#define _GLFW_PLATFORM_CONTEXT_STATE        _GLFWcontextNSGL nsgl
-#define _GLFW_PLATFORM_LIBRARY_OPENGL_STATE _GLFWlibraryNSGL nsgl
+#define _GLFW_PLATFORM_CONTEXT_STATE            _GLFWcontextNSGL nsgl
+#define _GLFW_PLATFORM_LIBRARY_CONTEXT_STATE    _GLFWlibraryNSGL nsgl
 
 
-//========================================================================
-// GLFW platform specific types
-//========================================================================
-
-//------------------------------------------------------------------------
-// Platform-specific OpenGL context structure
-//------------------------------------------------------------------------
+// NSGL-specific per-context data
+//
 typedef struct _GLFWcontextNSGL
 {
     id           pixelFormat;
     id	         context;
+
 } _GLFWcontextNSGL;
 
 
-//------------------------------------------------------------------------
-// Platform-specific library global data for NSGL
-//------------------------------------------------------------------------
+// NSGL-specific global data
+//
 typedef struct _GLFWlibraryNSGL
 {
-    // dlopen handle for dynamically loading OpenGL extension entry points
+    // dlopen handle for OpenGL.framework (for glfwGetProcAddress)
     void*           framework;
-
-    // TLS key for per-thread current context/window
-    pthread_key_t   current;
 
 } _GLFWlibraryNSGL;
 
 
-#endif // _nsgl_platform_h_
+int _glfwInitContextAPI(void);
+void _glfwTerminateContextAPI(void);
+int _glfwCreateContext(_GLFWwindow* window,
+                       const _GLFWctxconfig* ctxconfig,
+                       const _GLFWfbconfig* fbconfig);
+void _glfwDestroyContext(_GLFWwindow* window);
+
+#endif // _glfw3_nsgl_context_h_
