@@ -21,7 +21,6 @@ namespace Probulator
 	typedef SphericalHarmonicsT<vec3, 2> SphericalHarmonicsL2RGB;
 
 	template <typename T, size_t L> 
-	SphericalHarmonicsT<T, L> shEvaluate(vec3 p);
 	SphericalHarmonicsL1 shEvaluateL1(vec3 p);
 	SphericalHarmonicsL2 shEvaluateL2(vec3 p);
 	float shEvaluateDiffuseL2(const SphericalHarmonicsL2& sh, vec3 n);
@@ -49,55 +48,88 @@ namespace Probulator
 		return result;
 	}
 
+	template <size_t L>
+	inline SphericalHarmonicsT<float, L> shEvaluate(vec3 p)
+	{
+		// From Peter-Pike Sloan's Stupid SH Tricks
+		// http://www.ppsloan.org/publications/StupidSH36.pdf
+		// https://github.com/dariomanesku/cmft/blob/master/src/cmft/cubemapfilter.cpp#L130
+
+		static_assert(L<=4, "Spherical Harmonics above L4 are not supported");
+
+		SphericalHarmonicsT<float, L> result;
+
+		const float x = -p.x;
+		const float y = -p.y;
+		const float z = p.z;
+
+		const float x2 = x*x;
+		const float y2 = y*y;
+		const float z2 = z*z;
+
+		const float z3 = z2*z;
+
+		const float x4 = x2*x2;
+		const float y4 = y2*y2;
+		const float z4 = z2*z2;
+
+		const float sqrtPi = sqrt(pi);
+
+		size_t i = 0;
+
+		result[i++] =  1.0f/(2.0f*sqrtPi);
+
+		if (L >= 1)
+		{
+			result[i++] = -sqrt(3.0f/(4.0f*pi))*y;
+			result[i++] =  sqrt(3.0f/(4.0f*pi))*z;
+			result[i++] = -sqrt(3.0f/(4.0f*pi))*x;        	
+		}
+
+		if (L >= 2)
+		{
+			result[i++] =  sqrt(15.0f/(4.0f*pi))*y*x;
+			result[i++] = -sqrt(15.0f/(4.0f*pi))*y*z;
+			result[i++] =  sqrt(5.0f/(16.0f*pi))*(3.0*z2-1.0f);
+			result[i++] = -sqrt(15.0f/(4.0f*pi))*x*z;
+			result[i++] =  sqrt(15.0f/(16.0f*pi))*(x2-y2);			
+		}
+
+		if (L >= 3)
+		{
+			result[i++] = -sqrt( 70.0f/(64.0f*pi))*y*(3.0f*x2-y2);
+			result[i++] =  sqrt(105.0f/ (4.0f*pi))*y*x*z;
+			result[i++] = -sqrt( 21.0f/(16.0f*pi))*y*(-1.0f+5.0f*z2);
+			result[i++] =  sqrt(  7.0f/(16.0f*pi))*(5.0f*z3-3.0f*z);
+			result[i++] = -sqrt( 42.0f/(64.0f*pi))*x*(-1.0f+5.0f*z2);
+			result[i++] =  sqrt(105.0f/(16.0f*pi))*(x2-y2)*z;
+			result[i++] = -sqrt( 70.0f/(64.0f*pi))*x*(x2-3.0f*y2);			
+		}
+
+		if (L >= 4)
+		{
+			result[i++] =  3.0f*sqrt(35.0f/(16.0f*pi))*x*y*(x2-y2);
+			result[i++] = -3.0f*sqrt(70.0f/(64.0f*pi))*y*z*(3.0f*x2-y2);
+			result[i++] =  3.0f*sqrt( 5.0f/(16.0f*pi))*y*x*(-1.0f+7.0f*z2);
+			result[i++] = -3.0f*sqrt(10.0f/(64.0f*pi))*y*z*(-3.0f+7.0f*z2);
+			result[i++] =  (105.0f*z4-90.0f*z2+9.0f)/(16.0f*sqrtPi);
+			result[i++] = -3.0f*sqrt(10.0f/(64.0f*pi))*x*z*(-3.0f+7.0f*z2);
+			result[i++] =  3.0f*sqrt( 5.0f/(64.0f*pi))*(x2-y2)*(-1.0f+7.0f*z2);
+			result[i++] = -3.0f*sqrt(70.0f/(64.0f*pi))*x*z*(x2-3.0f*y2);
+			result[i++] =  3.0f*sqrt(35.0f/(4.0f*(64.0f*pi)))*(x4-6.0f*y2*x2+y4);			
+		}
+
+		return result;
+	}
+
 	inline SphericalHarmonicsL1 shEvaluateL1(vec3 p)
 	{
-		float c1 = 0.282095f;
-		float c2 = 0.488603f;
-
-		SphericalHarmonicsL1 sh;
-
-		sh[0] = c1; // Y00
-
-		sh[1] = c2 * p.y; // Y1-1
-		sh[2] = c2 * p.z; // Y10
-		sh[3] = c2 * p.x; // Y1+1
-
-		return sh;
+		return shEvaluate<1>(p);
 	}
 
 	inline SphericalHarmonicsL2 shEvaluateL2(vec3 p)
 	{
-		float c1 = 0.282095f;
-		float c2 = 0.488603f;
-		float c3 = 1.092548f;
-		float c4 = 0.315392f;
-		float c5 = 0.546274f;
-
-		SphericalHarmonicsL2 sh;
-
-		sh[0] = c1; // Y00
-
-		sh[1] = c2 * p.y; // Y1-1
-		sh[2] = c2 * p.z; // Y10
-		sh[3] = c2 * p.x; // Y1+1
-
-		sh[4] = c3 * p.x * p.y; // Y2-2
-		sh[5] = c3 * p.y * p.z; // Y2-1
-		sh[6] = c4 * (3.0f * p.z * p.z - 1.0f); // Y20
-		sh[7] = c3 * p.x * p.z; // Y2+1
-		sh[8] = c5 * (p.x * p.x - p.y * p.y); // Y2+2
-
-		return sh;
-	}
-
-	template <> inline SphericalHarmonicsT<float, 1> shEvaluate<float, 1>(vec3 p)
-	{
-		return shEvaluateL1(p);
-	}
-
-	template <> inline SphericalHarmonicsT<float, 2> shEvaluate<float, 2>(vec3 p)
-	{
-		return shEvaluateL2(p);
+		return shEvaluate<2>(p);
 	}
 
 	inline float shEvaluateDiffuseL1Geomerics(const SphericalHarmonicsL1& sh, const vec3& n)
@@ -117,60 +149,74 @@ namespace Probulator
 		return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
 	}
 
+	template <typename T, size_t L>
+	inline T shEvaluateDiffuse(const SphericalHarmonicsT<T, L>& sh, const vec3& direction)
+	{
+		static_assert(L<=4, "Spherical Harmonics above L4 are not supported");
+
+		SphericalHarmonicsT<float, L> directionSh = shEvaluate<L>(direction);
+
+		// https://cseweb.ucsd.edu/~ravir/papers/envmap/envmap.pdf equation 8
+
+		const float A[5] = {
+			pi,
+			pi * 2.0f / 3.0f,
+			pi * 1.0f / 4.0f,
+			0.0f,
+			-pi * 1.0f / 24.0f
+		};
+
+		size_t i = 0;
+
+		T result = sh[i] * directionSh[i] * A[0]; ++i;
+
+		if (L >= 1)
+		{
+			result += sh[i] * directionSh[i] * A[1]; ++i;
+			result += sh[i] * directionSh[i] * A[1]; ++i;
+			result += sh[i] * directionSh[i] * A[1]; ++i;
+		}
+
+		if (L >= 2)
+		{
+			result += sh[i] * directionSh[i] * A[2]; ++i;
+			result += sh[i] * directionSh[i] * A[2]; ++i;
+			result += sh[i] * directionSh[i] * A[2]; ++i;
+			result += sh[i] * directionSh[i] * A[2]; ++i;
+			result += sh[i] * directionSh[i] * A[2]; ++i;
+		}
+
+		// L3 and other odd bands > 1 have 0 factor
+
+		if (L >= 4)
+		{
+			i = 16;
+
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+			result += sh[i] * directionSh[i] * A[4]; ++i;
+		}
+
+		return result;
+	}
+
+
 	template <typename T>
 	inline T shEvaluateDiffuseL1(const SphericalHarmonicsT<T, 1>& sh, const vec3& direction)
 	{
-		float c1 = 0.886227f;
-		float c2 = 2.0f * 0.511664f;
-
-		const T& L00 = sh[0];
-
-		const T& L1_1 = sh[1];
-		const T& L10 = sh[2];
-		const T& L11 = sh[3];
-
-		float x = direction.x;
-		float y = direction.y;
-		float z = direction.z;
-
-		return c1*L00 + c2 * (L11*x + L1_1*y + L10*z);
+		return shEvaluateDiffuse<T, 1>(sh, direction);
 	}
 
 	template <typename T>
 	inline T shEvaluateDiffuseL2(const SphericalHarmonicsT<T, 2>& sh, const vec3& direction)
 	{
-		float c1 = 0.429043f;
-		float c2 = 0.511664f;
-		float c3 = 0.743125f;
-		float c4 = 0.886227f;
-		float c5 = 0.247708f;
-
-		const T& L00 = sh[0];
-
-		const T& L1_1 = sh[1];
-		const T& L10 = sh[2];
-		const T& L11 = sh[3];
-
-		const T& L2_2 = sh[4];
-		const T& L2_1 = sh[5];
-		const T& L20 = sh[6];
-		const T& L21 = sh[7];
-		const T& L22 = sh[8];
-
-		float x = direction.x;
-		float y = direction.y;
-		float z = direction.z;
-
-		float x2 = x * x;
-		float y2 = y * y;
-		float z2 = z * z;
-
-		return c1*L22*(x2 - y2)
-			+ c3*L20*z2
-			+ c4*L00
-			- c5*L20
-			+ 2.0f * c1 * (L2_2*x*y + L21*x*z + L2_1*y*z)
-			+ 2.0f * c2 * (L11*x + L1_1*y + L10*z);
+		return shEvaluateDiffuse<T, 2>(sh, direction);
 	}
 
 	template <typename T, size_t L>
@@ -201,7 +247,7 @@ namespace Probulator
 
 		for (const RadianceSample& sample : radianceSamples)
 		{
-			auto directionSh = shEvaluate<float, L>(sample.direction);
+			auto directionSh = shEvaluate<L>(sample.direction);
 			auto reconstructedValue = shDot(sh, directionSh);
 			auto error = sample.value - reconstructedValue;
 			errorSquaredSum += error*error;

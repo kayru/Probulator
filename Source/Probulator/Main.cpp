@@ -234,17 +234,18 @@ public:
 	bool m_scramblingEnabled = false;
 };
 
-class ExperimentSHL1 : public Experiment
+template <size_t L>
+class ExperimentSH : public Experiment
 {
 public:
 
 	void run(SharedData& data) override
 	{
-		SphericalHarmonicsL1RGB shRadiance = {};
+		SphericalHarmonicsT<vec3, L> shRadiance = {};
 		const u32 sampleCount = (u32)data.m_radianceSamples.size();
 		for (const RadianceSample& sample : data.m_radianceSamples)
 		{
-			shAddWeighted(shRadiance, shEvaluateL1(sample.direction), sample.value * (fourPi / sampleCount));
+			shAddWeighted(shRadiance, shEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
 		}
 
 		m_radianceImage = Image(data.m_outputSize);
@@ -252,12 +253,12 @@ public:
 
 		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
 		{
-			SphericalHarmonicsL1 directionSh = shEvaluateL1(direction);
+			SphericalHarmonicsT<float, L> directionSh = shEvaluate<L>(direction);
 
 			vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
 			m_radianceImage.at(pixelPos) = vec4(sampleSh, 1.0f);
 
-			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL1(shRadiance, direction) / pi);
+			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuse<vec3, L>(shRadiance, direction) / pi);
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
 	}
@@ -296,35 +297,6 @@ public:
 				shRadianceChannel[3] = shRadiance[3][i];
 				sampleIrradianceSh[i] = shEvaluateDiffuseL1Geomerics(shRadianceChannel, direction) / pi;
 			}
-			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
-		});
-	}
-};
-
-class ExperimentSHL2 : public Experiment
-{
-public:
-
-	void run(SharedData& data) override
-	{
-		SphericalHarmonicsL2RGB shRadiance = {};
-		const u32 sampleCount = (u32)data.m_radianceSamples.size();
-		for (const RadianceSample& sample : data.m_radianceSamples)
-		{
-			shAddWeighted(shRadiance, shEvaluateL2(sample.direction), sample.value * (fourPi / sampleCount));
-		}
-
-		m_radianceImage = Image(data.m_outputSize);
-		m_irradianceImage = Image(data.m_outputSize);
-
-		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
-		{
-			SphericalHarmonicsL2 directionSh = shEvaluateL2(direction);
-
-			vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
-			m_radianceImage.at(pixelPos) = vec4(sampleSh, 1.0f);
-
-			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL2(shRadiance, direction) / pi);
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
 	}
@@ -651,9 +623,11 @@ int main(int argc, char** argv)
 		.setHemisphereSampleCount(5000)
 		.setEnabled(false); // disabled by default, since MCIS mode is superior
 
-	addExperiment<ExperimentSHL1>(experiments, "Spherical Harmonics L1", "SHL1");
+	addExperiment<ExperimentSH<1>>(experiments, "Spherical Harmonics L1", "SHL1");
 	addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
-	addExperiment<ExperimentSHL2>(experiments, "Spherical Harmonics L2", "SHL2");
+	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
+	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
+	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
 
 	addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
 		.setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
