@@ -4,6 +4,7 @@
 #include "SphericalGaussian.h"
 #include "SGBasis.h"
 #include "SphericalHarmonics.h"
+#include "HBasis.h"
 #include "Variance.h"
 #include "RadianceSample.h"
 #include "SGFitGeneticAlgorithm.h"
@@ -28,12 +29,30 @@ public:
 
 	class SharedData
 	{
+	private:
+
+		void GenerateSamples(u32 sampleCount, Image& image,  std::vector<RadianceSample>& samples)
+		{
+			samples.reserve(sampleCount);
+			for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
+			{
+				vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
+				vec3 direction = sampleUniformSphere(sampleUv);
+
+				vec3 sample = (vec3)image.sampleNearest(cartesianToLatLongTexcoord(direction));
+
+				samples.push_back({ direction, sample });
+			}
+		}
+
 	public:
 
 		SharedData(u32 sampleCount, ivec2 outputSize, const char* hdrFilename)
 			: m_directionImage(outputSize)
 			, m_outputSize(outputSize)
 		{
+			m_sampleCount = sampleCount;
+
 			if (!m_radianceImage.readHdr(hdrFilename))
 			{
 				return;
@@ -50,21 +69,17 @@ public:
 				direction = latLongTexcoordToCartesian(uv);
 			});
 
-			m_radianceSamples.reserve(sampleCount);
-			for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
-			{
-				vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
-				vec3 direction = sampleUniformSphere(sampleUv);
-
-				vec3 sample = (vec3)m_radianceImage.sampleNearest(cartesianToLatLongTexcoord(direction));
-
-				m_radianceSamples.push_back({ direction, sample });
-			}
+			GenerateSamples(sampleCount, m_radianceImage, m_radianceSamples);
 		}
 
 		bool isValid() const
 		{
 			return m_radianceImage.getSizeBytes() != 0;
+		}
+
+		void GenerateIrradianceSamples(Image& irradianceimage)
+		{
+			GenerateSamples(m_sampleCount, irradianceimage, m_irradianceSamples);
 		}
 
 		// directions corresponding to lat-long texels
@@ -75,8 +90,10 @@ public:
 
 		// radiance samples uniformly distributed over a sphere
 		std::vector<RadianceSample> m_radianceSamples;
+		std::vector<RadianceSample> m_irradianceSamples;
 
 		ivec2 m_outputSize;
+		u32 m_sampleCount;
 	};
 
 	virtual void run(SharedData& data) = 0;
@@ -216,6 +233,8 @@ public:
 
 			pixel = vec4(accum, 1.0f);
 		});
+
+		data.GenerateIrradianceSamples(m_irradianceImage);
 	}
 
 	ExperimentMCIS& setSampleCount(u32 v)
@@ -311,6 +330,42 @@ public:
 				sampleIrradianceSh[i] = shEvaluateDiffuseL1Geomerics(shRadianceChannel, direction) / pi;
 			}
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
+		});
+	}
+};
+
+template <size_t L>
+class ExperimentHBasis : public Experiment
+{
+public:
+
+	void run(SharedData& data) override
+	{
+		HBasisT<vec3, L> hRadiance = {};
+		const u32 sampleCount = (u32)data.m_radianceSamples.size();
+		for (const RadianceSample& sample : data.m_radianceSamples)
+		{
+			hAddWeighted(hRadiance, hEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
+		}
+
+		HBasisT<vec3, L> hIrradiance = {};
+		for (const RadianceSample& sample : data.m_irradianceSamples)
+		{
+			hAddWeighted(hIrradiance, hEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
+		}
+
+		m_radianceImage = Image(data.m_outputSize);
+		m_irradianceImage = Image(data.m_outputSize);
+
+		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
+		{
+			HBasisT<float, L> directionH = hEvaluate<L>(direction);
+
+			vec3 sampleH = max(vec3(0.0f), hDot(hRadiance, directionH));
+			m_radianceImage.at(pixelPos) = vec4(sampleH, 1.0f);
+
+			vec3 sampleIrradianceH = max(vec3(0.0f), hDot(hRadiance, directionH));
+			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceH, 1.0f);
 		});
 	}
 };
@@ -579,6 +634,19 @@ inline T& addExperiment(ExperimentList& list, const char* name, const char* suff
 	return *e;
 }
 
+static void enableMIS(ExperimentList& list, std::string& suffix)
+{
+	// enable MIS when doing h-basis
+	if (suffix == "H4" || suffix == "H6")
+	{
+		for (const auto& e : list)
+		{
+			if (e->m_suffix == "MCIS")
+				e->m_enabled = true;
+		}
+	}
+}
+
 static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, char** suffixes)
 {
 	for (const auto& e : list)
@@ -588,6 +656,7 @@ static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, cha
 		{
 			if (!strcasecmp(e->m_suffix.c_str(), suffixes[i]))
 			{
+				enableMIS(list, e->m_suffix);
 				e->m_enabled = true;
 				break;
 			}
@@ -642,6 +711,9 @@ int main(int argc, char** argv)
 	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
 	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
 	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
+
+	addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4");
+	addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6");
 
 	addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
 		.setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
