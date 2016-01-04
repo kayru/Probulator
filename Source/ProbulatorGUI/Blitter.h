@@ -3,6 +3,8 @@
 #include "Common.h"
 #include "Renderer.h"
 
+#include <Probulator/Math.h>
+
 class Blitter : NonCopyable
 {
 public:
@@ -11,6 +13,7 @@ public:
 	~Blitter();
 
 	void drawTexture2D(const Texture& texture);
+	void drawLatLongEnvmap(const Texture& texture, const mat4& viewMatrix, const mat4& projectionMatrix);
 
 private:
 
@@ -21,7 +24,6 @@ private:
 
 	u32 m_vertexBuffer = 0;
 
-	ShaderPtr m_vertexShader;
-	ShaderPtr m_pixelShaderTexture2D;
 	ShaderProgramPtr m_programTexture2D;
+	ShaderProgramPtr m_programLatLongEnvmap;
 };
