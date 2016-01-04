@@ -148,20 +148,6 @@ public:
 	u32 m_hemisphereSampleCount = 1000;
 };
 
-static float latLongTexelArea(ivec2 pos, ivec2 imageSize)
-{
-	vec2 uv0 = vec2(pos) / vec2(imageSize);
-	vec2 uv1 = vec2(pos + 1) / vec2(imageSize);
-
-	float theta0 = pi*(uv0.x*2.0f - 1.0f);
-	float theta1 = pi*(uv1.x*2.0f - 1.0f);
-
-	float phi0 = pi*(uv0.y - 0.5f);
-	float phi1 = pi*(uv1.y - 0.5f);
-
-	return abs(theta1 - theta0) * abs(sin(phi1) - sin(phi0));
-}
-
 class ExperimentMCIS : public Experiment
 {
 public:
