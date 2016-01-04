@@ -2,29 +2,32 @@
 
 #include "Common.h"
 
-#include <GL/gl3w.h>
+#include <Probulator/Math.h>
+
 #include <memory>
+#include <GL/gl3w.h>
 
 namespace Probulator
 {
 	class Image;
 }
 
-enum VertexSemantic
+enum VertexAttribute
 {
-	VertexSemantic_Invalid,
-	VertexSemantic_Position,
-	VertexSemantic_TexCoord0,
-	VertexSemantic_TexCoord1,
-	VertexSemantic_TexCoord2,
-	VertexSemantic_TexCoord3,
+	VertexAttribute_Invalid,
+	VertexAttribute_Position,
+	VertexAttribute_Normal,
+	VertexAttribute_TexCoord0,
+	VertexAttribute_TexCoord1,
+	VertexAttribute_TexCoord2,
+	VertexAttribute_TexCoord3,
 };
 
-const char* toString(VertexSemantic semantic);
+const char* toString(VertexAttribute attribute);
 
 struct VertexElement
 {
-	VertexSemantic semantic = VertexSemantic_Invalid;
+	VertexAttribute attribute = VertexAttribute_Invalid;
 	u32 dataType = GL_FLOAT;
 	GLboolean normalized = GL_FALSE;
 	u32 componentCount = 1;
@@ -38,11 +41,11 @@ struct VertexDeclaration
 	u32 elementCount = 0;
 	VertexElement elements[MaxElements];
 
-	VertexDeclaration& add(VertexSemantic semantic, u32 dataType, GLboolean normalized, u32 componentCount, u32 offset)
+	VertexDeclaration& add(VertexAttribute attribute, u32 dataType, GLboolean normalized, u32 componentCount, u32 offset)
 	{
 		assert(elementCount < MaxElements);
 		VertexElement& element = elements[elementCount];
-		element.semantic = semantic;
+		element.attribute = attribute;
 		element.dataType = dataType;
 		element.normalized = normalized;
 		element.componentCount = componentCount;
@@ -133,3 +136,4 @@ ShaderProgramPtr createShaderProgram(
 
 void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture& texture);
 void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 vertexStride);
+void setUniformByName(const ShaderProgram& shaderProgram, const char* name, const mat4& value);

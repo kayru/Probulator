@@ -33,5 +33,7 @@ include_directories(
 	External/gl3w/include
 	External/glfw/include
 	External/imgui
+	External/nfd/include
+	External/tinyobjloader
 )
 add_subdirectory(ProbulatorGUI)

@@ -3,8 +3,10 @@
 #include <Probulator/Image.h>
 #include <string>
 
+#include <glm/gtc/type_ptr.hpp>
+
 TexturePtr createTextureFromImage(
-	const Image& image, 
+	const Image& image,
 	const TextureFilter& filter,
 	bool verticalFlip)
 {
@@ -42,27 +44,29 @@ TexturePtr createTextureFromImage(
 	{
 		glTexImage2D(type, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, image.data());
 	}
-	
+
 
 	return result;
 }
 
-const char* toString(VertexSemantic semantic)
+const char* toString(VertexAttribute attribute)
 {
-	switch (semantic)
+	switch (attribute)
 	{
 	default:
-	case VertexSemantic_Invalid:
+	case VertexAttribute_Invalid:
 		return "Invalid";
-	case VertexSemantic_Position:
+	case VertexAttribute_Position:
 		return "Position";
-	case VertexSemantic_TexCoord0:
+	case VertexAttribute_Normal:
+		return "Normal";
+	case VertexAttribute_TexCoord0:
 		return "TexCoord0";
-	case VertexSemantic_TexCoord1:
+	case VertexAttribute_TexCoord1:
 		return "TexCoord1";
-	case VertexSemantic_TexCoord2:
+	case VertexAttribute_TexCoord2:
 		return "TexCoord2";
-	case VertexSemantic_TexCoord3:
+	case VertexAttribute_TexCoord3:
 		return "TexCoord3";
 	}
 }
@@ -120,8 +124,8 @@ ShaderProgramPtr createShaderProgram(
 	for (u32 i = 0; i < vertexDeclaration.elementCount; ++i)
 	{
 		const VertexElement& element = vertexDeclaration.elements[i];
-		const char* semanticName = toString(element.semantic);
-		GLint location = glGetAttribLocation(result->m_native, semanticName);
+		const char* attributeName = toString(element.attribute);
+		GLint location = glGetAttribLocation(result->m_native, attributeName);
 		if (location != -1)
 		{
 			glEnableVertexAttribArray(location);
@@ -146,6 +150,7 @@ ShaderProgramPtr createShaderProgram(
 
 void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 vertexStride)
 {
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBindVertexArray(shaderProgram.m_vertexArray);
 	for (u32 i = 0; i < shaderProgram.m_vertexDeclaration.elementCount; ++i)
 	{
@@ -167,6 +172,17 @@ void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture
 	if (location == -1)
 		return;
 
-	glActiveTexture(GL_TEXTURE0 + location);
-	glBindTexture(texture.m_type, texture.m_native);	
+	glActiveTexture(GL_TEXTURE0 + slotIndex);
+	glBindTexture(texture.m_type, texture.m_native);
+	glUniform1i(location, slotIndex);
+}
+
+void setUniformByName(const ShaderProgram& shaderProgram, const char* name, const mat4& value)
+{
+	GLint location = glGetUniformLocation(shaderProgram.m_native, name); // TODO: cache uniform bindings
+
+	if (location == -1)
+		return;
+
+	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
