@@ -18,3 +18,18 @@ target_link_libraries(ProbulatorGUI
 	nfd
 	tinyobjloader
 )
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	set(DATA_CMD COMMAND ${CMAKE_COMMAND} -E copy_directory) # CMake doesn't support symlinks on Windows
+else()
+	set(DATA_CMD COMMAND ${CMAKE_COMMAND} -E create_symlink)
+endif()
+
+if (MSVC)
+	set(DATA_DIR $<TARGET_FILE_DIR:ProbulatorGUI>/../Data) # Default Visual Studio workind directory is $(ProjectDir)
+else()
+	set(DATA_DIR $<TARGET_FILE_DIR:ProbulatorGUI>/Data)
+endif()
+
+add_custom_command(TARGET ProbulatorGUI POST_BUILD 
+	${DATA_CMD} ${CMAKE_SOURCE_DIR}/Data ${DATA_DIR})
