@@ -54,5 +54,8 @@ struct CameraController
 	CameraMode m_mode = CameraMode_FirstPerson;
 
 	void update(const InputState& input, Camera& camera);
+
+	Camera interpolate(const Camera& x, const Camera& y, 
+		float positionAlpha, float orientationAlpha, float attributeAlpha = 1.0f);
 };
 

@@ -106,6 +106,8 @@ public:
 		m_camera.m_position = vec3(0.0f, 0.0f, 1.5f);
 		m_camera.m_near = 0.01f;
 		m_camera.m_far = 100.0f;
+
+		m_smoothCamera = m_camera;
 	}
 
 	~ProbulatorGui()
@@ -256,6 +258,12 @@ public:
 		cameraControllerInput.rotateSpeedMultiplier = min(1.0f, m_camera.m_fov);
 
 		m_cameraController.update(cameraControllerInput, m_camera);
+
+		const float positionAlpha = 0.1f;
+		const float orientationAlpha = 0.25f;
+		m_smoothCamera = m_cameraController.interpolate(
+			m_smoothCamera, m_camera, 
+			positionAlpha, orientationAlpha);
 	}
 
 	void update()
@@ -275,9 +283,10 @@ public:
 		m_sceneViewport.y = m_windowSize.y;
 
 		m_camera.m_aspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
+		m_smoothCamera.m_aspect = m_camera.m_aspect;
 
-		m_viewMatrix = m_camera.getViewMatrix();
-		m_projectionMatrix = m_camera.getProjectionMatrix();
+		m_viewMatrix = m_smoothCamera.getViewMatrix();
+		m_projectionMatrix = m_smoothCamera.getProjectionMatrix();
 
 		m_viewPojectionMatrix = m_projectionMatrix * m_viewMatrix;
 		
@@ -383,6 +392,7 @@ public:
 	std::unique_ptr<Model> m_model;
 
 	Camera m_camera;
+	Camera m_smoothCamera;
 	CameraController m_cameraController;
 
 	mat4 m_worldMatrix = mat4(1.0f);

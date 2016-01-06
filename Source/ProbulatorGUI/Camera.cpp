@@ -41,6 +41,8 @@ void Camera::move(const vec3& delta)
 
 void CameraController::update(const InputState& input, Camera& camera)
 {
+	// TODO: orbit camera mode update
+
 	float moveSpeed = m_moveSpeed * input.moveSpeedMultiplier;
 	float rotateSpeed = m_rotateSpeed * input.rotateSpeedMultiplier;
 
@@ -72,4 +74,26 @@ const char* toString(CameraMode mode)
 	case CameraMode_Orbit:
 		return "Orbit";
 	}
+}
+
+Camera CameraController::interpolate(const Camera& x, const Camera& y, 
+	float positionAlpha, float orientationAlpha, float attributeAlpha)
+{
+	// TODO: orbit camera mode interpolation
+
+	Camera result;
+
+	result.m_aspect = mix(x.m_aspect, y.m_aspect, attributeAlpha);
+	result.m_fov = mix(x.m_fov, y.m_fov, attributeAlpha);
+	result.m_near = mix(x.m_near, y.m_near, attributeAlpha);
+	result.m_far = mix(x.m_far, y.m_far, attributeAlpha);
+	result.m_position = mix(x.m_position, y.m_position, positionAlpha);
+
+	glm::quat qx = (glm::quat)x.m_orientation;
+	glm::quat qy = (glm::quat)y.m_orientation;
+	glm::quat qr = normalize(glm::slerp(qx, qy, orientationAlpha));
+	
+	result.m_orientation = (mat3)qr;
+
+	return result;
 }
