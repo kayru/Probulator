@@ -8,6 +8,7 @@
 #include <Probulator/Image.h>
 #include <Probulator/DiscreteDistribution.h>
 
+#include <glm/gtx/transform.hpp>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -190,6 +191,21 @@ public:
 		ImGui::End();
 	}
 
+	void updateObject()
+	{
+		if (m_mouseButtonDown[1])
+		{
+			const float rotateSpeed = 0.005f;
+
+			vec2 mouseDelta = m_mousePosition - m_oldMousePosition;
+
+			mat4 rotUp = glm::rotate(mouseDelta.x * rotateSpeed, m_camera.m_orientation[1]);
+			mat4 rotRight = glm::rotate(mouseDelta.y * rotateSpeed, m_camera.m_orientation[0]);
+
+			m_worldMatrix = rotUp * rotRight * m_worldMatrix;
+		}
+	}
+
 	void updateCamera()
 	{
 		CameraController::InputState cameraControllerInput;
@@ -244,6 +260,7 @@ public:
 
 	void update()
 	{
+		updateObject();
 		updateCamera();
 		updateImGui();
 
