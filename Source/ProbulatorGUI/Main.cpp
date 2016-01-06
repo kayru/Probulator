@@ -102,7 +102,7 @@ public:
 		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
-		m_camera.m_position = vec3(0.0f, 0.0f, 2.0f);
+		m_camera.m_position = vec3(0.0f, 0.0f, 1.5f);
 		m_camera.m_near = 0.01f;
 		m_camera.m_far = 100.0f;
 	}
@@ -257,9 +257,6 @@ public:
 		m_sceneViewport.x = m_windowSize.x - m_menuWidth;
 		m_sceneViewport.y = m_windowSize.y;
 
-		// m_worldMatrix = glm::rotate(m_worldMatrix, 0.01f, vec3(0.0f, 1.0f, 0.0f));
-		// m_viewMatrix = glm::lookAt(m_camera.m_position, m_cameraTarget, vec3(0.0f, 1.0f, 0.0f));
-
 		m_camera.m_aspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
 
 		m_viewMatrix = m_camera.getViewMatrix();
@@ -307,7 +304,7 @@ public:
 		float largestSide = max(max(dimensions.x, dimensions.y), dimensions.z);
 
 		m_worldMatrix = mat4(1.0f / largestSide);
-		m_worldMatrix[3].w = 1.0;
+		m_worldMatrix[3] = vec4(-m_model->m_center / largestSide, 1.0f);
 	}
 
 	void loadEnvmap(const char* filename)
