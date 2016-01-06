@@ -237,7 +237,19 @@ public:
             for (const auto& e : m_experimentResultsList)
             {
                 ImGui::BeginGroup();
-                ImGui::Text(e->m_label.c_str());
+                {
+                    std::string label = e->m_label;
+                    std::string::size_type pos = label.find_first_of('[');
+                    if (pos != std::string::npos)
+                    {
+                        std::string mainName = std::string(&label[0], &label[pos]);
+                        std::string subName  = std::string(&label[pos], &label[label.size()]);
+                        ImGui::Text(mainName.c_str());
+                        ImGui::Text(subName.c_str());
+                    }
+                    else
+                        ImGui::Text(label.c_str());
+                }
                 ImGui::Spacing();
                 if (ImGui::Button("Delete"))
                     deleteMe = e->m_label.c_str();;
@@ -369,7 +381,7 @@ public:
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
 	ivec2 m_sceneViewport = ivec2(1, 1);
-	int m_menuWidth = 560; // 1280-720
+	int m_menuWidth = 660;
 	Image m_radianceImage;
 	TexturePtr m_radianceTexture;
 	TexturePtr m_irradianceTexture;
