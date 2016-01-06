@@ -3,6 +3,8 @@ add_definitions(-DNOMINMAX=1) # Never want min/max macros from Windows.h
 add_executable(ProbulatorGUI
 	Blitter.cpp
 	Blitter.h
+	Camera.h
+	Camera.cpp
 	Common.h
 	Main.cpp
 	Model.cpp

@@ -2,12 +2,12 @@
 #include "Renderer.h"
 #include "Blitter.h"
 #include "Model.h"
+#include "Camera.h"
 
 #include <Probulator/Math.h>
 #include <Probulator/Image.h>
 #include <Probulator/DiscreteDistribution.h>
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -97,7 +97,14 @@ class ProbulatorGui
 public:
 	ProbulatorGui()
 	{
+		memset(m_mouseButtonDown, 0, sizeof(m_mouseButtonDown));
+		memset(m_mouseButtonDownPosition, 0, sizeof(m_mouseButtonDownPosition));
+		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
+
+		m_camera.m_position = vec3(0.0f, 0.0f, 2.0f);
+		m_camera.m_near = 0.01f;
+		m_camera.m_far = 100.0f;
 	}
 
 	~ProbulatorGui()
@@ -164,12 +171,83 @@ public:
 
 		if (ImGui::CollapsingHeader("Camera", nullptr, true, true))
 		{
-			ImGui::SliderFloat("FOV", &m_cameraFov, 0.1f, pi);
-			ImGui::DragFloat3("Target", &m_cameraTarget.x, 0.01f);
-			ImGui::DragFloat3("Position", &m_cameraPosition.x, 0.01f);
+			const char* cameraModeNames[CameraModeCount];
+			for (u32 i = 0; i < CameraModeCount; ++i)
+			{
+				cameraModeNames[i] = toString((CameraMode)i);
+			}
+			ImGui::Combo("Mode", reinterpret_cast<int*>(&m_cameraController.m_mode), cameraModeNames, CameraModeCount);
+			ImGui::SliderFloat("FOV", &m_camera.m_fov, 0.1f, pi);
+			ImGui::SliderFloat("Near", &m_camera.m_near, 0.01f, 10.0f);
+			ImGui::SliderFloat("Far", &m_camera.m_far, m_camera.m_near, 1000.0f);
+			ImGui::DragFloat3("Position", &m_camera.m_position.x, 0.01f);
+			if (m_cameraController.m_mode == CameraMode_Orbit)
+			{
+				ImGui::DragFloat3("Orbit center", &m_cameraController.m_orbitCenter.x, 0.01f);
+			}
 		}
 
 		ImGui::End();
+	}
+
+	void updateCamera()
+	{
+		CameraController::InputState cameraControllerInput;
+
+		float rotateSpeed = 0.01f;
+		float moveSpeed = 0.1f;
+
+		if (m_mouseButtonDown[0])
+		{
+			vec2 mouseDelta = m_mousePosition - m_oldMousePosition;
+			cameraControllerInput.rotateAroundUp = mouseDelta.x;
+			cameraControllerInput.rotateAroundRight = mouseDelta.y;
+		}
+
+		if (m_keyDown[GLFW_KEY_LEFT_CONTROL])
+		{
+			cameraControllerInput.moveSpeedMultiplier *= 0.1f;
+		}
+		if (m_keyDown[GLFW_KEY_LEFT_SHIFT])
+		{
+			cameraControllerInput.moveSpeedMultiplier *= 10.0f;
+		}
+		if (m_keyDown[GLFW_KEY_W])
+		{
+			cameraControllerInput.moveForward += 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_S])
+		{
+			cameraControllerInput.moveForward -= 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_A])
+		{
+			cameraControllerInput.moveRight -= 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_D])
+		{
+			cameraControllerInput.moveRight += 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_E])
+		{
+			cameraControllerInput.moveUp += 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_Q])
+		{
+			cameraControllerInput.moveUp -= 1.0f;
+		}
+
+		cameraControllerInput.rotateSpeedMultiplier = min(1.0f, m_camera.m_fov);
+
+		m_cameraController.update(cameraControllerInput, m_camera);
+	}
+
+	void update()
+	{
+		updateCamera();
+		updateImGui();
+
+		m_oldMousePosition = m_mousePosition;
 	}
 
 	void render()
@@ -179,11 +257,14 @@ public:
 		m_sceneViewport.x = m_windowSize.x - m_menuWidth;
 		m_sceneViewport.y = m_windowSize.y;
 
-		//m_worldMatrix = glm::rotate(m_worldMatrix, 0.01f, vec3(0.0f, 1.0f, 0.0f));
-		m_viewMatrix = glm::lookAt(m_cameraPosition, m_cameraTarget, vec3(0.0f, 1.0f, 0.0f));
+		// m_worldMatrix = glm::rotate(m_worldMatrix, 0.01f, vec3(0.0f, 1.0f, 0.0f));
+		// m_viewMatrix = glm::lookAt(m_camera.m_position, m_cameraTarget, vec3(0.0f, 1.0f, 0.0f));
 
-		const float viewportAspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
-		m_projectionMatrix = glm::perspective(m_cameraFov, viewportAspect, m_cameraNear, m_cameraFar);
+		m_camera.m_aspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
+
+		m_viewMatrix = m_camera.getViewMatrix();
+		m_projectionMatrix = m_camera.getProjectionMatrix();
+
 		m_viewPojectionMatrix = m_projectionMatrix * m_viewMatrix;
 		
 		// draw scene
@@ -251,6 +332,31 @@ public:
 		m_irradianceTexture = createTextureFromImage(irradianceImage, filter);
 	}
 
+	void onMouseButton(int button, int action, int mods)
+	{
+		if (button >= MouseButtonCount)
+			return;
+
+		m_mouseButtonDown[button] = action == GLFW_PRESS;
+		if (m_mouseButtonDown[button])
+		{
+			m_mouseButtonDownPosition[button] = m_mousePosition;
+		}
+	}
+
+	void onMouseMove(const vec2& mousePosition)
+	{
+		m_mousePosition = mousePosition;
+	}
+
+	void onKey(int key, int scancode, int action, int mods)
+	{
+		if (key < 0 || key > GLFW_KEY_LAST)
+			return;
+
+		m_keyDown[key] = action != GLFW_RELEASE;
+	}
+
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
@@ -262,11 +368,8 @@ public:
 	Blitter m_blitter;
 	std::unique_ptr<Model> m_model;
 
-	vec3 m_cameraTarget = vec3(0.0f, 0.5f, 0.0f);
-	vec3 m_cameraPosition = vec3(0.0f, 0.5f, 2.0f);
-	float m_cameraFov = 1.0f;
-	float m_cameraNear = 1.0f;
-	float m_cameraFar = 1000.0f;
+	Camera m_camera;
+	CameraController m_cameraController;
 
 	mat4 m_worldMatrix = mat4(1.0f);
 	mat4 m_viewMatrix = mat4(1.0f);
@@ -275,12 +378,71 @@ public:
 
 	// If textures are used in ImGui, they must be kept alive until ImGui rendering is complete
 	std::vector<TexturePtr> m_guiTextureReferences;
+
+	enum { MouseButtonCount = 3 };
+	bool m_mouseButtonDown[MouseButtonCount];
+	vec2 m_mouseButtonDownPosition[MouseButtonCount];
+	vec2 m_mousePosition = vec2(0.0f);
+	vec2 m_oldMousePosition = vec2(0.0f);
+	bool m_keyDown[GLFW_KEY_LAST+1];
 };
 
 static void cbWindowSize(GLFWwindow* window, int w, int h)
 {
 	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 	app->setWindowSize(ivec2(w, h));
+}
+
+static void cbMouseButton(GLFWwindow* window, int button, int action, int mods)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		app->onMouseButton(button, action, mods);
+	}
+}
+
+static void cbScroll(GLFWwindow* window, double xoffset, double yoffset)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
+
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		// app->onScroll();
+	}
+}
+
+static void cbCursorPos(GLFWwindow* window, double x, double y)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		app->onMouseMove(vec2(x, y));
+	}
+}
+
+static void cbKey(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
+
+	if (!ImGui::GetIO().WantCaptureKeyboard)
+	{
+		app->onKey(key, scancode, action, mods);
+	}	
+}
+
+static void cbChar(GLFWwindow* window, unsigned int c)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	ImGui_ImplGlfwGL3_CharCallback(window, c);
+
+	if (!ImGui::GetIO().WantCaptureKeyboard)
+	{
+		// app->onChar();
+	}
 }
 
 int main(int argc, char** argv)
@@ -322,13 +484,19 @@ int main(int argc, char** argv)
 	glfwSetWindowUserPointer(window, app);
 	glfwSetWindowSizeCallback(window, cbWindowSize);
 
+	glfwSetMouseButtonCallback(window, cbMouseButton);
+	glfwSetScrollCallback(window, cbScroll);
+	glfwSetKeyCallback(window, cbKey);
+	glfwSetCharCallback(window, cbChar);
+	glfwSetCursorPosCallback(window, cbCursorPos);
+
 	glfwSwapInterval(1); // vsync ON
 
 	do
 	{
 		ImGui_ImplGlfwGL3_NewFrame();
 
-		app->updateImGui();
+		app->update();
 		app->render();
 
 		glfwSwapBuffers(window);
