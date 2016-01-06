@@ -105,6 +105,12 @@ public:
 
 	}
 
+    static bool getComboItem(void* data, int idx, const char** outText)
+    {
+        *outText = (*((std::vector<std::string>*)data))[idx].c_str();
+        return true;
+    }
+
 	void updateImGui()
 	{
 		m_guiTextureReferences.clear();
@@ -120,7 +126,7 @@ public:
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
 
-		if (ImGui::CollapsingHeader("Environment", nullptr, true, true))
+		if (ImGui::CollapsingHeader("Environment", nullptr, true, false))
 		{
 			ImGui::Text("File:");
 			ImGui::SameLine();
@@ -145,7 +151,7 @@ public:
 			ImGui::Image((ImTextureID)m_irradianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2));
 		}
 
-		if (ImGui::CollapsingHeader("Object", nullptr, true, true))
+		if (ImGui::CollapsingHeader("Object", nullptr, true, false))
 		{
 			ImGui::Text("File:");
 			ImGui::SameLine();
@@ -162,12 +168,121 @@ public:
 			}
 		}
 
-		if (ImGui::CollapsingHeader("Camera", nullptr, true, true))
+		if (ImGui::CollapsingHeader("Camera", nullptr, true, false))
 		{
 			ImGui::SliderFloat("FOV", &m_cameraFov, 0.1f, pi);
 			ImGui::DragFloat3("Target", &m_cameraTarget.x, 0.01f);
 			ImGui::DragFloat3("Position", &m_cameraPosition.x, 0.01f);
 		}
+
+        if (ImGui::CollapsingHeader("Basis Experiments"), nullptr, true, true)
+        {
+            static std::vector<std::string> kBasisTypes;
+            static bool first = true;
+            struct ExperimentResults 
+            {
+                ExperimentResults(const std::string& l = "", ImTextureID r = 0, ImTextureID ir = 0, ImTextureID s = 0)
+                          : label(l), radianceImage(r), irradianceImage(ir), sampeImage(s), shouldRender(false)
+                { }
+                std::string label;
+                ImTextureID radianceImage;
+                ImTextureID irradianceImage;
+                ImTextureID sampeImage;
+                bool shouldRender;
+            };
+
+            typedef std::vector<std::unique_ptr<ExperimentResults>> ExperimentResultsList;
+            static ExperimentResultsList experimentList;
+
+            if (first)
+            {
+                kBasisTypes.push_back("basis 1");
+                kBasisTypes.push_back("basis 2");
+                kBasisTypes.push_back("basis 3");
+                first = false;
+            }
+
+            static int currItem = 0;
+            if (kBasisTypes.size())
+            {
+                ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&kBasisTypes, (int)kBasisTypes.size());
+                ImGui::SameLine();
+                if (ImGui::Button("+"))
+                {
+                    experimentList.push_back(std::unique_ptr<ExperimentResults>(new ExperimentResults(kBasisTypes[currItem],
+                                                            (ImTextureID)m_irradianceTexture->m_native, 
+                                                            (ImTextureID)m_irradianceTexture->m_native,
+                                                            (ImTextureID)m_irradianceTexture->m_native)));
+
+                    kBasisTypes.erase(kBasisTypes.begin() + currItem);
+                    currItem = 0;
+                }
+            }
+
+            // render each experiment
+
+            ImGui::Separator();
+            ImGui::Columns(4, "Experiment Results", true);
+            ImGui::Text("Mode");
+            ImGui::NextColumn();
+            ImGui::Text("Radiance");
+            ImGui::NextColumn();
+            ImGui::Text("Irradiance");
+            ImGui::NextColumn();
+            ImGui::Text("Irradiance Error");
+            ImGui::Text("(sMAPE)");
+            ImGui::Separator();
+            ImGui::NextColumn();
+
+            std::string deleteMe;
+            for (const auto& e : experimentList)
+            {
+                ImGui::BeginGroup();
+                ImGui::Text(e->label.c_str());
+                ImGui::Spacing();
+                if (ImGui::Button("Delete"))
+                    deleteMe = e->label.c_str();;
+                if (ImGui::Checkbox("Render", &e->shouldRender))
+                {
+                    if (e->shouldRender)
+                    {   
+                        // turn off all other experiments
+                        for (const auto& o : experimentList)
+                        {
+                            if (o != e)
+                                o->shouldRender = false;
+                        }
+                    }
+                }
+                ImGui::EndGroup();
+                ImGui::NextColumn();
+                ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+                ImGui::NextColumn();
+                ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+                ImGui::NextColumn();
+                ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+                ImGui::Separator();
+                ImGui::NextColumn();
+            }
+
+            if (deleteMe != "")
+            {
+                // iterate through experiment results and remove
+                auto i = std::begin(experimentList);
+                while (i != std::end(experimentList))
+                {
+                    if ((*i)->label == deleteMe)
+                        i = experimentList.erase(i);
+                    else
+                        ++i;
+                }
+
+                // add basis back to drop down list
+                kBasisTypes.push_back(deleteMe);
+            }
+
+            ImGui::Columns(1);
+        }
 
 		ImGui::End();
 	}
