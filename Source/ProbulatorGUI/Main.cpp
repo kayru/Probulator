@@ -6,6 +6,7 @@
 #include <Probulator/Math.h>
 #include <Probulator/Image.h>
 #include <Probulator/DiscreteDistribution.h>
+#include <Probulator/Experiments.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/gl3w.h>
@@ -92,12 +93,31 @@ static Image imageRadianceToIrradiance(const Image& radianceImage, ivec2 outputS
 	return irradianceImage;
 }
 
+struct ExperimentResults
+{
+    ExperimentResults(const std::string& l = "", ImTextureID r = 0, ImTextureID ir = 0, ImTextureID s = 0)
+        : m_label(l), m_radianceImage(r), m_irradianceImage(ir), m_sampeImage(s), m_shouldRender(false)
+        { }
+
+    std::string m_label;
+    ImTextureID m_radianceImage;
+    ImTextureID m_irradianceImage;
+    ImTextureID m_sampeImage;
+    bool m_shouldRender;
+};
+typedef std::vector<std::unique_ptr<ExperimentResults>> ExperimentResultsList;
+
 class ProbulatorGui
 {
 public:
+
 	ProbulatorGui()
 	{
 		loadResources();
+
+        addAllExperiments(m_experimentList);
+        for (auto& e : m_experimentList)
+            m_experimentNames.push_back(e->m_name);
 	}
 
 	~ProbulatorGui()
@@ -177,44 +197,23 @@ public:
 
         if (ImGui::CollapsingHeader("Basis Experiments"), nullptr, true, true)
         {
-            static std::vector<std::string> kBasisTypes;
-            static bool first = true;
-            struct ExperimentResults 
-            {
-                ExperimentResults(const std::string& l = "", ImTextureID r = 0, ImTextureID ir = 0, ImTextureID s = 0)
-                          : label(l), radianceImage(r), irradianceImage(ir), sampeImage(s), shouldRender(false)
-                { }
-                std::string label;
-                ImTextureID radianceImage;
-                ImTextureID irradianceImage;
-                ImTextureID sampeImage;
-                bool shouldRender;
-            };
-
-            typedef std::vector<std::unique_ptr<ExperimentResults>> ExperimentResultsList;
-            static ExperimentResultsList experimentList;
-
-            if (first)
-            {
-                kBasisTypes.push_back("basis 1");
-                kBasisTypes.push_back("basis 2");
-                kBasisTypes.push_back("basis 3");
-                first = false;
-            }
+            
 
             static int currItem = 0;
-            if (kBasisTypes.size())
+            if (m_experimentNames.size())
             {
-                ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&kBasisTypes, (int)kBasisTypes.size());
+                ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&m_experimentNames, 
+                                              (int)m_experimentNames.size());
                 ImGui::SameLine();
                 if (ImGui::Button("+"))
                 {
-                    experimentList.push_back(std::unique_ptr<ExperimentResults>(new ExperimentResults(kBasisTypes[currItem],
-                                                            (ImTextureID)m_irradianceTexture->m_native, 
-                                                            (ImTextureID)m_irradianceTexture->m_native,
-                                                            (ImTextureID)m_irradianceTexture->m_native)));
+                    ExperimentResults* e = new ExperimentResults(m_experimentNames[currItem], 
+                                                                 (ImTextureID)m_irradianceTexture->m_native, 
+                                                                 (ImTextureID)m_irradianceTexture->m_native,
+                                                                 (ImTextureID)m_irradianceTexture->m_native);
+                    m_experimentResultsList.push_back(std::unique_ptr<ExperimentResults>(e));
 
-                    kBasisTypes.erase(kBasisTypes.begin() + currItem);
+                    m_experimentNames.erase(m_experimentNames.begin() + currItem);
                     currItem = 0;
                 }
             }
@@ -235,22 +234,22 @@ public:
             ImGui::NextColumn();
 
             std::string deleteMe;
-            for (const auto& e : experimentList)
+            for (const auto& e : m_experimentResultsList)
             {
                 ImGui::BeginGroup();
-                ImGui::Text(e->label.c_str());
+                ImGui::Text(e->m_label.c_str());
                 ImGui::Spacing();
                 if (ImGui::Button("Delete"))
-                    deleteMe = e->label.c_str();;
-                if (ImGui::Checkbox("Render", &e->shouldRender))
+                    deleteMe = e->m_label.c_str();;
+                if (ImGui::Checkbox("Render", &e->m_shouldRender))
                 {
-                    if (e->shouldRender)
+                    if (e->m_shouldRender)
                     {   
                         // turn off all other experiments
-                        for (const auto& o : experimentList)
+                        for (const auto& o : m_experimentResultsList)
                         {
                             if (o != e)
-                                o->shouldRender = false;
+                                o->m_shouldRender = false;
                         }
                     }
                 }
@@ -268,17 +267,17 @@ public:
             if (deleteMe != "")
             {
                 // iterate through experiment results and remove
-                auto i = std::begin(experimentList);
-                while (i != std::end(experimentList))
+                auto i = std::begin(m_experimentResultsList);
+                while (i != std::end(m_experimentResultsList))
                 {
-                    if ((*i)->label == deleteMe)
-                        i = experimentList.erase(i);
+                    if ((*i)->m_label == deleteMe)
+                        i = m_experimentResultsList.erase(i);
                     else
                         ++i;
                 }
 
                 // add basis back to drop down list
-                kBasisTypes.push_back(deleteMe);
+                m_experimentNames.push_back(deleteMe);
             }
 
             ImGui::Columns(1);
@@ -382,6 +381,10 @@ public:
 	float m_cameraFov = 1.0f;
 	float m_cameraNear = 1.0f;
 	float m_cameraFar = 1000.0f;
+
+    std::vector<std::string> m_experimentNames;
+    Probulator::ExperimentList m_experimentList;
+    ExperimentResultsList m_experimentResultsList;
 
 	mat4 m_worldMatrix = mat4(1.0f);
 	mat4 m_viewMatrix = mat4(1.0f);
