@@ -64,7 +64,7 @@ Model::Model(const char* objFilename)
 		*pixelShaderTexture2D,
 		m_vertexDeclaration);
 
-	const bool forceGenerateNormals = true;
+	const bool forceGenerateNormals = false;
 	readObj(objFilename, forceGenerateNormals);
 }
 
@@ -121,7 +121,7 @@ bool Model::readObj(const char* objFilename, bool forceGenerateNormals)
 			{
 				v.normal.x = mesh.normals[i * 3 + 0];
 				v.normal.y = mesh.normals[i * 3 + 1];
-				v.normal.y = mesh.normals[i * 3 + 2];
+				v.normal.z = mesh.normals[i * 3 + 2];
 			}
 
 			vertices.push_back(v);
