@@ -9,3 +9,9 @@ include_directories(
 	glm
 )
 add_subdirectory(imgui)
+
+set_property(TARGET gl3w PROPERTY FOLDER "External")
+set_property(TARGET glfw PROPERTY FOLDER "External")
+set_property(TARGET imgui PROPERTY FOLDER "External")
+set_property(TARGET nfd PROPERTY FOLDER "External")
+set_property(TARGET tinyobjloader PROPERTY FOLDER "External")

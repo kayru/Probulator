@@ -3,6 +3,7 @@ add_library(Probulator
 	Compute.cpp
 	Compute.h
 	DiscreteDistribution.h
+	HBasis.h
 	Image.cpp
 	Image.h
 	Math.h
