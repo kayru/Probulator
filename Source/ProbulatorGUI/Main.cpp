@@ -115,6 +115,12 @@ public:
 
 	}
 
+	ImTextureID getImTextureID(TexturePtr texture)
+	{
+		m_guiTextureReferences.push_back(m_radianceTexture);
+		return reinterpret_cast<ImTextureID>(texture->m_native);
+	}
+
 	void updateImGui()
 	{
 		m_guiTextureReferences.clear();
@@ -134,7 +140,7 @@ public:
 		{
 			ImGui::Text("File:");
 			ImGui::SameLine();
-			ImGui::TextColored(highlightColor, m_envmapFilename.c_str());
+			ImGui::TextColored(highlightColor, "%s", m_envmapFilename.c_str());
 
 			if (ImGui::Button("Load HDR"))
 			{
@@ -146,20 +152,18 @@ public:
 				free(filename);
 			}
 
-			m_guiTextureReferences.push_back(m_radianceTexture);
 			ImGui::Text("Radiance:");
-			ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2));
+			ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2));
 
-			m_guiTextureReferences.push_back(m_irradianceTexture);
 			ImGui::Text("Irradiance:");
-			ImGui::Image((ImTextureID)m_irradianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2));
+			ImGui::Image(getImTextureID(m_irradianceTexture), vec2(m_menuWidth, m_menuWidth / 2));
 		}
 
 		if (ImGui::CollapsingHeader("Object", nullptr, true, true))
 		{
 			ImGui::Text("File:");
 			ImGui::SameLine();
-			ImGui::TextColored(highlightColor, m_objectFilename.c_str());
+			ImGui::TextColored(highlightColor, "%s", m_objectFilename.c_str());
 
 			if (ImGui::Button("Load OBJ"))
 			{
@@ -211,9 +215,6 @@ public:
 	void updateCamera()
 	{
 		CameraController::InputState cameraControllerInput;
-
-		float rotateSpeed = 0.01f;
-		float moveSpeed = 0.1f;
 
 		if (m_mouseButtonDown[0])
 		{
@@ -429,11 +430,11 @@ static void cbMouseButton(GLFWwindow* window, int button, int action, int mods)
 
 static void cbScroll(GLFWwindow* window, double xoffset, double yoffset)
 {
-	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 	ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
 
 	if (!ImGui::GetIO().WantCaptureMouse)
 	{
+		// ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 		// app->onScroll();
 	}
 }
@@ -460,11 +461,11 @@ static void cbKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 static void cbChar(GLFWwindow* window, unsigned int c)
 {
-	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 	ImGui_ImplGlfwGL3_CharCallback(window, c);
 
 	if (!ImGui::GetIO().WantCaptureKeyboard)
 	{
+		// ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 		// app->onChar();
 	}
 }
