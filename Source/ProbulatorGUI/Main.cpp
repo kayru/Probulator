@@ -118,7 +118,7 @@ public:
 	ImTextureID getImTextureID(TexturePtr texture)
 	{
 		m_guiTextureReferences.push_back(m_radianceTexture);
-		return reinterpret_cast<ImTextureID>(texture->m_native);
+		return reinterpret_cast<ImTextureID>((u64)texture->m_native);
 	}
 
 	void updateImGui()
