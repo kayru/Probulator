@@ -283,15 +283,21 @@ public:
 	void run(SharedData& data) override
 	{
 		SphericalHarmonicsT<vec3, L> shRadiance = {};
-		const u32 sampleCount = (u32)data.m_radianceSamples.size();
-		for (const RadianceSample& sample : data.m_radianceSamples)
-		{
-			shAddWeighted(shRadiance, shEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
-		}
 
-		if (m_lambda != 0.0f)
+		auto projectSh = [&](const vec4& sampleValue, ivec2 pixelPos)
 		{
-			shReduceRinging<vec3, L>(shRadiance, m_lambda);
+			const vec3& sampleDirection = data.m_directionImage.at(pixelPos);
+			float weight = latLongTexelArea(pixelPos, data.m_outputSize);
+			shAddWeighted(shRadiance, shEvaluate<L>(sampleDirection), (vec3)sampleValue * weight);
+		};
+
+		if (m_preconvolved)
+		{
+			m_input->m_irradianceImage.forPixels2D(projectSh);
+		}
+		else
+		{
+			data.m_radianceImage.forPixels2D(projectSh);
 		}
 
 		m_radianceImage = Image(data.m_outputSize);
@@ -304,7 +310,15 @@ public:
 			vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
 			m_radianceImage.at(pixelPos) = vec4(sampleSh, 1.0f);
 
-			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuse<vec3, L>(shRadiance, direction) / pi);
+			vec3 sampleIrradianceSh;
+			if (m_preconvolved)
+			{
+				sampleIrradianceSh = sampleSh;
+			}
+			else
+			{
+				sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuse<vec3, L>(shRadiance, direction) / pi);
+			}
 			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
 		});
 	}
@@ -315,7 +329,14 @@ public:
 		return *this;
 	}
 
+	ExperimentSH<L>& setPreconvolved(bool state)
+	{
+		m_preconvolved = state;
+		return *this;
+	}
+
 	float m_lambda = 0.0f;
+	float m_preconvolved = false;
 };
 
 class ExperimentSHL1Geomerics : public Experiment
@@ -719,6 +740,23 @@ int main(int argc, char** argv)
 	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
 	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
 	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
+
+	addExperiment<ExperimentSH<1>>(experiments, "Spherical Harmonics L1 [Preconvolved]", "SHL1p")
+		.setPreconvolved(true)
+		.setEnabled(false)
+		.setInput(experimentMCIS);
+	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2 [Preconvolved]", "SHL2p")
+		.setPreconvolved(true)
+		.setEnabled(false)
+		.setInput(experimentMCIS);
+	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3 [Preconvolved]", "SHL3p")
+		.setPreconvolved(true)
+		.setEnabled(false)
+		.setInput(experimentMCIS);
+	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4 [Preconvolved]", "SHL4p")
+		.setPreconvolved(true)
+		.setEnabled(false)
+		.setInput(experimentMCIS);
 
 	addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
 		.setInput(experimentMCIS);
