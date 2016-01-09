@@ -100,15 +100,48 @@ public:
 
 	virtual ~Experiment() {};
 
+	void runWithDepencencies(SharedData& data)
+	{
+		if (m_executed)
+			return;
+
+		for (Experiment* d : m_dependencies)
+		{
+			d->runWithDepencencies(data);
+		}
+
+		run(data);
+
+		m_executed = true;
+	}
+
 	Experiment& setEnabled(bool state)
 	{
 		m_enabled = state;
 		return *this;
 	}
 
+	// This experiment is used as the ground truth
 	Experiment& setUseAsReference(bool state)
 	{
 		m_useAsReference = state;
+		return *this;
+	}
+
+	// This experiment requires ground truth reference as input
+	Experiment& addDependency(Experiment* e)
+	{
+		m_dependencies.push_back(e);
+		return *this;
+	}
+
+	Experiment& setInput(Experiment* e)
+	{
+		m_input = e;
+		if (e != nullptr)
+		{
+			addDependency(e);
+		}
 		return *this;
 	}
 
@@ -116,8 +149,11 @@ public:
 
 	std::string m_name;
 	std::string m_suffix;
+	bool m_executed = false;
 	bool m_enabled = true;
 	bool m_useAsReference = false;
+	std::vector<Experiment*> m_dependencies;
+	Experiment* m_input = nullptr;
 
 	// Common experiment outputs
 
@@ -171,16 +207,16 @@ public:
 
 	void run(SharedData& data) override
 	{
-		m_radianceImage = data.m_radianceImage;
-
 		const ivec2 imageSize = data.m_outputSize;
 		const ivec2 imageSizeMinusOne = imageSize - 1;
 		const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
 
+		m_radianceImage = data.m_radianceImage;
+
 		std::vector<float> texelWeights;
 		std::vector<float> texelAreas;
 		float weightSum = 0.0;
-		data.m_radianceImage.forPixels2D([&](const vec4& p, ivec2 pixelPos)
+		m_radianceImage.forPixels2D([&](const vec4& p, ivec2 pixelPos)
 		{
 			float area = latLongTexelArea(pixelPos, imageSize);
 
@@ -620,19 +656,6 @@ inline T& addExperiment(ExperimentList& list, const char* name, const char* suff
 	return *e;
 }
 
-static void enableMIS(ExperimentList& list, std::string& suffix)
-{
-	// enable MIS when doing h-basis
-	if (suffix == "H4" || suffix == "H6")
-	{
-		for (const auto& e : list)
-		{
-			if (e->m_suffix == "MCIS")
-				e->m_enabled = true;
-		}
-	}
-}
-
 static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, char** suffixes)
 {
 	for (const auto& e : list)
@@ -642,7 +665,6 @@ static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, cha
 		{
 			if (!strcasecmp(e->m_suffix.c_str(), suffixes[i]))
 			{
-				enableMIS(list, e->m_suffix);
 				e->m_enabled = true;
 				break;
 			}
@@ -677,7 +699,7 @@ int main(int argc, char** argv)
 
 	ExperimentList experiments;
 
-	addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling]", "MCIS")
+	Experiment* experimentMCIS = &addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling]", "MCIS")
 		.setSampleCount(5000)
 		.setScramblingEnabled(false) // prefer errors due to correlation instead of noise due to scrambling
 		.setUseAsReference(true); // other experiments will be compared against this
@@ -698,8 +720,11 @@ int main(int argc, char** argv)
 	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
 	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
 
-	addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4");
-	addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6");
+	addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
+		.setInput(experimentMCIS);
+
+	addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
+		.setInput(experimentMCIS);
 
 	addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
 		.setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
@@ -737,7 +762,7 @@ int main(int argc, char** argv)
 			continue;
 
 		printf("  * %s\n", e->m_name.c_str());
-		e->run(sharedData);
+		e->runWithDepencencies(sharedData);
 	}
 
 	generateReportHtml(experiments, "report.html");
