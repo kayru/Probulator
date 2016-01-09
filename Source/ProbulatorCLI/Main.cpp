@@ -31,7 +31,7 @@ public:
 	{
 	private:
 
-		void GenerateSamples(u32 sampleCount, Image& image,  std::vector<RadianceSample>& samples)
+		void generateUniformSphereSamples(const Image& image, u32 sampleCount, std::vector<RadianceSample>& samples)
 		{
 			samples.reserve(sampleCount);
 			for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
@@ -69,7 +69,7 @@ public:
 				direction = latLongTexcoordToCartesian(uv);
 			});
 
-			GenerateSamples(sampleCount, m_radianceImage, m_radianceSamples);
+			generateUniformSphereSamples(m_radianceImage, sampleCount, m_radianceSamples);
 		}
 
 		bool isValid() const
@@ -77,9 +77,9 @@ public:
 			return m_radianceImage.getSizeBytes() != 0;
 		}
 
-		void GenerateIrradianceSamples(Image& irradianceimage)
+		void generateIrradianceSamples(Image& irradianceimage)
 		{
-			GenerateSamples(m_sampleCount, irradianceimage, m_irradianceSamples);
+			generateUniformSphereSamples(irradianceimage, m_sampleCount, m_irradianceSamples);
 		}
 
 		// directions corresponding to lat-long texels
@@ -256,7 +256,7 @@ public:
 			pixel = vec4(accum, 1.0f);
 		});
 
-		data.GenerateIrradianceSamples(m_irradianceImage);
+		data.generateIrradianceSamples(m_irradianceImage); // TODO: store irradiance samples in the MCIS experiment itself
 	}
 
 	ExperimentMCIS& setSampleCount(u32 v)
@@ -436,14 +436,31 @@ public:
 		return *this;
 	}
 
+	ExperimentSGBase& setPreconvolved(bool state)
+	{
+		m_preconvolved = state;
+		return *this;
+	}
+
 	void run(SharedData& data) override
 	{
 		generateLobes();
-		solveForRadiance(data.m_radianceSamples);
-		generateRadianceImage(data);
-		generateIrradianceImage(data);
+
+		if (m_preconvolved)
+		{
+			solveForRadiance(data.m_irradianceSamples);
+			generateRadianceImage(data);
+			m_irradianceImage = m_radianceImage;
+		}
+		else
+		{
+			solveForRadiance(data.m_radianceSamples);
+			generateRadianceImage(data);
+			generateIrradianceImage(data);
+		}
 	}
 
+	bool m_preconvolved = false;
 	bool m_ambientLobeEnabled = false;
 	u32 m_lobeCount = 1;
 	float m_lambda = 0.0f;
@@ -737,22 +754,28 @@ int main(int argc, char** argv)
 	addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
 
 	addExperiment<ExperimentSH<1>>(experiments, "Spherical Harmonics L1", "SHL1");
-	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
-	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
-	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
 
 	addExperiment<ExperimentSH<1>>(experiments, "Spherical Harmonics L1 [Preconvolved]", "SHL1p")
 		.setPreconvolved(true)
 		.setEnabled(false)
 		.setInput(experimentMCIS);
+
+	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
+
 	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2 [Preconvolved]", "SHL2p")
 		.setPreconvolved(true)
 		.setEnabled(false)
 		.setInput(experimentMCIS);
+
+	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
+
 	addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3 [Preconvolved]", "SHL3p")
 		.setPreconvolved(true)
 		.setEnabled(false)
 		.setInput(experimentMCIS);
+
+	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
+
 	addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4 [Preconvolved]", "SHL4p")
 		.setPreconvolved(true)
 		.setEnabled(false)
@@ -768,9 +791,21 @@ int main(int argc, char** argv)
 		.setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
 		.setLobeCountAndLambda(lobeCount, lambda);
 
+	addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive, Preconvolved]", "SGp")
+		.setLobeCountAndLambda(lobeCount, lambda)
+		.setPreconvolved(true)
+		.setInput(experimentMCIS)
+		.setEnabled(false);
+
 	addExperiment<ExperimentSGLS>(experiments, "Spherical Gaussians [Least Squares]", "SGLS")
 		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
 		.setLobeCountAndLambda(lobeCount, lambda);
+
+	addExperiment<ExperimentSGLS>(experiments, "Spherical Gaussians [Least Squares, Preconvolved]", "SGLSp")
+		.setLobeCountAndLambda(lobeCount, lambda)
+		.setPreconvolved(true)
+		.setInput(experimentMCIS)
+		.setEnabled(false);
 
 	addExperiment<ExperimentSGLS>(experiments, "Spherical Gaussians [Least Squares + Ambient]", "SGLSA")
 		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
@@ -780,6 +815,12 @@ int main(int argc, char** argv)
 	addExperiment<ExperimentSGNNLS>(experiments, "Spherical Gaussians [Non-Negative Least Squares]", "SGNNLS")
 		.setBrdfLambda(3.0f) // Chosen arbitrarily through experimentation
 		.setLobeCountAndLambda(lobeCount, lambda);
+
+	addExperiment<ExperimentSGNNLS>(experiments, "Spherical Gaussians [Non-Negative Least Squares, Preconvolved]", "SGNNLSp")
+		.setLobeCountAndLambda(lobeCount, lambda)
+		.setPreconvolved(true)
+		.setInput(experimentMCIS)
+		.setEnabled(false);
 
 	addExperiment<ExperimentSGGA>(experiments, "Spherical Gaussians [Genetic Algorithm]", "SGGA")
 		.setPopulationAndGenerationCount(50, 2000)
