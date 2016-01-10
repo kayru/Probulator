@@ -3,6 +3,9 @@ add_library(Probulator
 	Compute.cpp
 	Compute.h
 	DiscreteDistribution.h
+    HBasis.h
+    Experiments.h
+	Experiments.cpp
 	Image.cpp
 	Image.h
 	Math.h
@@ -30,3 +33,4 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR
 	target_link_libraries(Probulator ${tbb})
 endif()
 
+target_link_libraries(Probulator stb)

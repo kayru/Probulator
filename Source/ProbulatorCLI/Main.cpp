@@ -110,19 +110,6 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 	f.close();
 }
 
-static void enableMIS(ExperimentList& list, std::string& suffix)
-{
-	// enable MIS when doing h-basis
-	if (suffix == "H4" || suffix == "H6")
-	{
-		for (const auto& e : list)
-		{
-			if (e->m_suffix == "MCIS")
-				e->m_enabled = true;
-		}
-	}
-}
-
 static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, char** suffixes)
 {
 	for (const auto& e : list)
@@ -132,7 +119,6 @@ static void enableExperimentsBySuffix(ExperimentList& list, u32 suffixCount, cha
 		{
 			if (!strcasecmp(e->m_suffix.c_str(), suffixes[i]))
 			{
-				enableMIS(list, e->m_suffix);
 				e->m_enabled = true;
 				break;
 			}
@@ -179,7 +165,7 @@ int main(int argc, char** argv)
 			continue;
 
 		printf("  * %s\n", e->m_name.c_str());
-		e->run(sharedData);
+		e->runWithDepencencies(sharedData);
 	}
 
 	generateReportHtml(experiments, "report.html");

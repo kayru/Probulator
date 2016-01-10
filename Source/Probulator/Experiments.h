@@ -95,15 +95,48 @@ public:
 
     virtual ~Experiment() {};
 
+    void runWithDepencencies(SharedData& data)
+    {
+        if (m_executed)
+            return;
+
+        for (Experiment* d : m_dependencies)
+        {
+            d->runWithDepencencies(data);
+        }
+
+        run(data);
+
+        m_executed = true;
+    }
+
     Experiment& setEnabled(bool state)
     {
         m_enabled = state;
         return *this;
     }
 
+    // This experiment is used as the ground truth
     Experiment& setUseAsReference(bool state)
     {
         m_useAsReference = state;
+        return *this;
+    }
+
+    // This experiment requires ground truth reference as input
+    Experiment& addDependency(Experiment* e)
+    {
+        m_dependencies.push_back(e);
+        return *this;
+    }
+
+    Experiment& setInput(Experiment* e)
+    {
+        m_input = e;
+        if (e != nullptr)
+        {
+            addDependency(e);
+        }
         return *this;
     }
 
@@ -111,8 +144,11 @@ public:
 
     std::string m_name;
     std::string m_suffix;
+    bool m_executed = false;
     bool m_enabled = true;
     bool m_useAsReference = false;
+    std::vector<Experiment*> m_dependencies;
+    Experiment* m_input = nullptr;
 
     // Common experiment outputs
 
@@ -166,16 +202,16 @@ public:
 
     void run(SharedData& data) override
     {
-        m_radianceImage = data.m_radianceImage;
-
         const ivec2 imageSize = data.m_outputSize;
         const ivec2 imageSizeMinusOne = imageSize - 1;
         const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
 
+        m_radianceImage = data.m_radianceImage;
+
         std::vector<float> texelWeights;
         std::vector<float> texelAreas;
         float weightSum = 0.0;
-        data.m_radianceImage.forPixels2D([&](const vec4& p, ivec2 pixelPos)
+        m_radianceImage.forPixels2D([&](const vec4& p, ivec2 pixelPos)
         {
             float area = latLongTexelArea(pixelPos, imageSize);
 

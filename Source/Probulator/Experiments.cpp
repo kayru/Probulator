@@ -3,8 +3,8 @@
 namespace Probulator
 {
 
-template <typename T>
-static T& addExperiment(ExperimentList& list, const char* name, const char* suffix)
+template <typename T> 
+inline T& addExperiment(ExperimentList& list, const char* name, const char* suffix)
 {
     T* e = new T;
     list.push_back(std::unique_ptr<Experiment>(e));
@@ -18,7 +18,7 @@ void addAllExperiments(ExperimentList& experiments)
     const u32 lobeCount = 12; // <-- tweak this
     const float lambda = 0.5f * lobeCount; // <-- tweak this; 
 
-    addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling]", "MCIS")
+    Experiment* experimentMCIS = &addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling]", "MCIS")
         .setSampleCount(5000)
         .setScramblingEnabled(false) // prefer errors due to correlation instead of noise due to scrambling
         .setUseAsReference(true); // other experiments will be compared against this
@@ -39,8 +39,10 @@ void addAllExperiments(ExperimentList& experiments)
     addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
     addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
 
-    addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4");
-    addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6");
+    addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
+        .setInput(experimentMCIS);
+    addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
+        .setInput(experimentMCIS);
 
     addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
         .setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation

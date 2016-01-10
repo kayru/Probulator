@@ -59,7 +59,7 @@ set(glfw_linux_src
 	"src/x11_init.c"
 	"src/x11_monitor.c"
 	"src/x11_window.c"
-	"src/x11_unicode.c"
+	"src/xkb_unicode.c"
 	"src/linux_joystick.c"
 	"src/posix_time.c"
 	"src/posix_tls.c"

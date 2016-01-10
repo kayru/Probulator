@@ -2,13 +2,14 @@
 #include "Renderer.h"
 #include "Blitter.h"
 #include "Model.h"
+#include "Camera.h"
 
 #include <Probulator/Math.h>
 #include <Probulator/Image.h>
 #include <Probulator/DiscreteDistribution.h>
 #include <Probulator/Experiments.h>
 
-#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -113,11 +114,20 @@ public:
 
 	ProbulatorGui()
 	{
+		memset(m_mouseButtonDown, 0, sizeof(m_mouseButtonDown));
+		memset(m_mouseButtonDownPosition, 0, sizeof(m_mouseButtonDownPosition));
+		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
         addAllExperiments(m_experimentList);
         for (auto& e : m_experimentList)
             m_experimentNames.push_back(e->m_name);
+
+		m_camera.m_position = vec3(0.0f, 0.0f, 1.5f);
+		m_camera.m_near = 0.01f;
+		m_camera.m_far = 100.0f;
+
+		m_smoothCamera = m_camera;
 	}
 
 	~ProbulatorGui()
@@ -130,6 +140,12 @@ public:
         *outText = (*((std::vector<std::string>*)data))[idx].c_str();
         return true;
     }
+
+	ImTextureID getImTextureID(TexturePtr texture)
+	{
+		m_guiTextureReferences.push_back(m_radianceTexture);
+		return reinterpret_cast<ImTextureID>((u64)texture->m_native);
+	}
 
 	void updateImGui()
 	{
@@ -150,7 +166,7 @@ public:
 		{
 			ImGui::Text("File:");
 			ImGui::SameLine();
-			ImGui::TextColored(highlightColor, m_envmapFilename.c_str());
+			ImGui::TextColored(highlightColor, "%s", m_envmapFilename.c_str());
 
 			if (ImGui::Button("Load HDR"))
 			{
@@ -162,20 +178,18 @@ public:
 				free(filename);
 			}
 
-			m_guiTextureReferences.push_back(m_radianceTexture);
 			ImGui::Text("Radiance:");
-			ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2));
+			ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2));
 
-			m_guiTextureReferences.push_back(m_irradianceTexture);
 			ImGui::Text("Irradiance:");
-			ImGui::Image((ImTextureID)m_irradianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2));
+			ImGui::Image(getImTextureID(m_irradianceTexture), vec2(m_menuWidth, m_menuWidth / 2));
 		}
 
 		if (ImGui::CollapsingHeader("Object", nullptr, true, false))
 		{
 			ImGui::Text("File:");
 			ImGui::SameLine();
-			ImGui::TextColored(highlightColor, m_objectFilename.c_str());
+			ImGui::TextColored(highlightColor, "%s", m_objectFilename.c_str());
 
 			if (ImGui::Button("Load OBJ"))
 			{
@@ -190,9 +204,20 @@ public:
 
 		if (ImGui::CollapsingHeader("Camera", nullptr, true, false))
 		{
-			ImGui::SliderFloat("FOV", &m_cameraFov, 0.1f, pi);
-			ImGui::DragFloat3("Target", &m_cameraTarget.x, 0.01f);
-			ImGui::DragFloat3("Position", &m_cameraPosition.x, 0.01f);
+			const char* cameraModeNames[CameraModeCount];
+			for (u32 i = 0; i < CameraModeCount; ++i)
+			{
+				cameraModeNames[i] = toString((CameraMode)i);
+			}
+			ImGui::Combo("Mode", reinterpret_cast<int*>(&m_cameraController.m_mode), cameraModeNames, CameraModeCount);
+			ImGui::SliderFloat("FOV", &m_camera.m_fov, 0.1f, pi);
+			ImGui::SliderFloat("Near", &m_camera.m_near, 0.01f, 10.0f);
+			ImGui::SliderFloat("Far", &m_camera.m_far, m_camera.m_near, 1000.0f);
+			ImGui::DragFloat3("Position", &m_camera.m_position.x, 0.01f);
+			if (m_cameraController.m_mode == CameraMode_Orbit)
+			{
+				ImGui::DragFloat3("Orbit center", &m_cameraController.m_orbitCenter.x, 0.01f);
+			}
 		}
 
         if (ImGui::CollapsingHeader("Basis Experiments"), nullptr, true, true)
@@ -298,6 +323,85 @@ public:
 		ImGui::End();
 	}
 
+	void updateObject()
+	{
+		if (m_mouseButtonDown[1])
+		{
+			const float rotateSpeed = 0.005f;
+
+			vec2 mouseDelta = m_mousePosition - m_oldMousePosition;
+
+			mat4 rotUp = glm::rotate(mouseDelta.x * rotateSpeed, m_camera.m_orientation[1]);
+			mat4 rotRight = glm::rotate(mouseDelta.y * rotateSpeed, m_camera.m_orientation[0]);
+
+			m_worldMatrix = rotUp * rotRight * m_worldMatrix;
+		}
+	}
+
+	void updateCamera()
+	{
+		CameraController::InputState cameraControllerInput;
+
+		if (m_mouseButtonDown[0])
+		{
+			vec2 mouseDelta = m_mousePosition - m_oldMousePosition;
+			cameraControllerInput.rotateAroundUp = mouseDelta.x;
+			cameraControllerInput.rotateAroundRight = mouseDelta.y;
+		}
+
+		if (m_keyDown[GLFW_KEY_LEFT_CONTROL])
+		{
+			cameraControllerInput.moveSpeedMultiplier *= 0.1f;
+		}
+		if (m_keyDown[GLFW_KEY_LEFT_SHIFT])
+		{
+			cameraControllerInput.moveSpeedMultiplier *= 10.0f;
+		}
+		if (m_keyDown[GLFW_KEY_W])
+		{
+			cameraControllerInput.moveForward += 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_S])
+		{
+			cameraControllerInput.moveForward -= 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_A])
+		{
+			cameraControllerInput.moveRight -= 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_D])
+		{
+			cameraControllerInput.moveRight += 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_E])
+		{
+			cameraControllerInput.moveUp += 1.0f;
+		}
+		if (m_keyDown[GLFW_KEY_Q])
+		{
+			cameraControllerInput.moveUp -= 1.0f;
+		}
+
+		cameraControllerInput.rotateSpeedMultiplier = min(1.0f, m_camera.m_fov);
+
+		m_cameraController.update(cameraControllerInput, m_camera);
+
+		const float positionAlpha = 0.1f;
+		const float orientationAlpha = 0.25f;
+		m_smoothCamera = m_cameraController.interpolate(
+			m_smoothCamera, m_camera, 
+			positionAlpha, orientationAlpha);
+	}
+
+	void update()
+	{
+		updateObject();
+		updateCamera();
+		updateImGui();
+
+		m_oldMousePosition = m_mousePosition;
+	}
+
 	void render()
 	{
 		// setup constants
@@ -305,11 +409,12 @@ public:
 		m_sceneViewport.x = m_windowSize.x - m_menuWidth;
 		m_sceneViewport.y = m_windowSize.y;
 
-		//m_worldMatrix = glm::rotate(m_worldMatrix, 0.01f, vec3(0.0f, 1.0f, 0.0f));
-		m_viewMatrix = glm::lookAt(m_cameraPosition, m_cameraTarget, vec3(0.0f, 1.0f, 0.0f));
+		m_camera.m_aspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
+		m_smoothCamera.m_aspect = m_camera.m_aspect;
 
-		const float viewportAspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
-		m_projectionMatrix = glm::perspective(m_cameraFov, viewportAspect, m_cameraNear, m_cameraFar);
+		m_viewMatrix = m_smoothCamera.getViewMatrix();
+		m_projectionMatrix = m_smoothCamera.getProjectionMatrix();
+
 		m_viewPojectionMatrix = m_projectionMatrix * m_viewMatrix;
 		
 		// draw scene
@@ -352,7 +457,7 @@ public:
 		float largestSide = max(max(dimensions.x, dimensions.y), dimensions.z);
 
 		m_worldMatrix = mat4(1.0f / largestSide);
-		m_worldMatrix[3].w = 1.0;
+		m_worldMatrix[3] = vec4(-m_model->m_center / largestSide, 1.0f);
 	}
 
 	void loadEnvmap(const char* filename)
@@ -377,6 +482,31 @@ public:
 		m_irradianceTexture = createTextureFromImage(irradianceImage, filter);
 	}
 
+	void onMouseButton(int button, int action, int mods)
+	{
+		if (button >= MouseButtonCount)
+			return;
+
+		m_mouseButtonDown[button] = action == GLFW_PRESS;
+		if (m_mouseButtonDown[button])
+		{
+			m_mouseButtonDownPosition[button] = m_mousePosition;
+		}
+	}
+
+	void onMouseMove(const vec2& mousePosition)
+	{
+		m_mousePosition = mousePosition;
+	}
+
+	void onKey(int key, int scancode, int action, int mods)
+	{
+		if (key < 0 || key > GLFW_KEY_LAST)
+			return;
+
+		m_keyDown[key] = action != GLFW_RELEASE;
+	}
+
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
@@ -388,11 +518,9 @@ public:
 	Blitter m_blitter;
 	std::unique_ptr<Model> m_model;
 
-	vec3 m_cameraTarget = vec3(0.0f, 0.5f, 0.0f);
-	vec3 m_cameraPosition = vec3(0.0f, 0.5f, 2.0f);
-	float m_cameraFov = 1.0f;
-	float m_cameraNear = 1.0f;
-	float m_cameraFar = 1000.0f;
+	Camera m_camera;
+	Camera m_smoothCamera;
+	CameraController m_cameraController;
 
     std::vector<std::string> m_experimentNames;
     Probulator::ExperimentList m_experimentList;
@@ -405,12 +533,71 @@ public:
 
 	// If textures are used in ImGui, they must be kept alive until ImGui rendering is complete
 	std::vector<TexturePtr> m_guiTextureReferences;
+
+	enum { MouseButtonCount = 3 };
+	bool m_mouseButtonDown[MouseButtonCount];
+	vec2 m_mouseButtonDownPosition[MouseButtonCount];
+	vec2 m_mousePosition = vec2(0.0f);
+	vec2 m_oldMousePosition = vec2(0.0f);
+	bool m_keyDown[GLFW_KEY_LAST+1];
 };
 
 static void cbWindowSize(GLFWwindow* window, int w, int h)
 {
 	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
 	app->setWindowSize(ivec2(w, h));
+}
+
+static void cbMouseButton(GLFWwindow* window, int button, int action, int mods)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	ImGui_ImplGlfwGL3_MouseButtonCallback(window, button, action, mods);
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		app->onMouseButton(button, action, mods);
+	}
+}
+
+static void cbScroll(GLFWwindow* window, double xoffset, double yoffset)
+{
+	ImGui_ImplGlfwGL3_ScrollCallback(window, xoffset, yoffset);
+
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		// ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+		// app->onScroll();
+	}
+}
+
+static void cbCursorPos(GLFWwindow* window, double x, double y)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	if (!ImGui::GetIO().WantCaptureMouse)
+	{
+		app->onMouseMove(vec2(x, y));
+	}
+}
+
+static void cbKey(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+	ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
+
+	if (!ImGui::GetIO().WantCaptureKeyboard)
+	{
+		app->onKey(key, scancode, action, mods);
+	}	
+}
+
+static void cbChar(GLFWwindow* window, unsigned int c)
+{
+	ImGui_ImplGlfwGL3_CharCallback(window, c);
+
+	if (!ImGui::GetIO().WantCaptureKeyboard)
+	{
+		// ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+		// app->onChar();
+	}
 }
 
 int main(int argc, char** argv)
@@ -452,13 +639,19 @@ int main(int argc, char** argv)
 	glfwSetWindowUserPointer(window, app);
 	glfwSetWindowSizeCallback(window, cbWindowSize);
 
+	glfwSetMouseButtonCallback(window, cbMouseButton);
+	glfwSetScrollCallback(window, cbScroll);
+	glfwSetKeyCallback(window, cbKey);
+	glfwSetCharCallback(window, cbChar);
+	glfwSetCursorPosCallback(window, cbCursorPos);
+
 	glfwSwapInterval(1); // vsync ON
 
 	do
 	{
 		ImGui_ImplGlfwGL3_NewFrame();
 
-		app->updateImGui();
+		app->update();
 		app->render();
 
 		glfwSwapBuffers(window);
