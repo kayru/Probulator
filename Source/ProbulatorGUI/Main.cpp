@@ -259,6 +259,7 @@ public:
             ImGui::NextColumn();
 
             std::string deleteMe;
+            int guiIdx = 0;
             for (const auto& e : m_experimentResultsList)
             {
                 ImGui::BeginGroup();
@@ -276,9 +277,9 @@ public:
                         ImGui::Text(label.c_str());
                 }
                 ImGui::Spacing();
-                if (ImGui::Button("Delete"))
-                    deleteMe = e->m_label.c_str();;
-                if (ImGui::Checkbox("Render", &e->m_shouldRender))
+                if (ImGui::Button((std::string("Delete##") + std::string(1, char(guiIdx++))).c_str()))
+                    deleteMe = e->m_label.c_str();
+                if (ImGui::Checkbox(std::string("Render##" + std::string(1, char(guiIdx++))).c_str(), &e->m_shouldRender))
                 {
                     if (e->m_shouldRender)
                     {   
