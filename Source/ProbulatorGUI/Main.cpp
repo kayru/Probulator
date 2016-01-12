@@ -233,9 +233,9 @@ public:
                 if (ImGui::Button("+"))
                 {
                     ExperimentResults* e = new ExperimentResults(m_experimentNames[currItem], 
-                                                                 (ImTextureID)m_irradianceTexture->m_native, 
-                                                                 (ImTextureID)m_irradianceTexture->m_native,
-                                                                 (ImTextureID)m_irradianceTexture->m_native);
+                                                                 getImTextureID(m_irradianceTexture), 
+                                                                 getImTextureID(m_irradianceTexture),
+                                                                 getImTextureID(m_irradianceTexture));
                     m_experimentResultsList.push_back(std::unique_ptr<ExperimentResults>(e));
 
                     m_experimentNames.erase(m_experimentNames.begin() + currItem);
@@ -293,11 +293,11 @@ public:
                 }
                 ImGui::EndGroup();
                 ImGui::NextColumn();
-                ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+                ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
                 ImGui::NextColumn();
-                ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+                ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
                 ImGui::NextColumn();
-                ImGui::Image((ImTextureID)m_radianceTexture->m_native, vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+                ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
                 ImGui::Separator();
                 ImGui::NextColumn();
             }
