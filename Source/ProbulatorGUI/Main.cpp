@@ -19,81 +19,6 @@
 #include <stdio.h>
 #include <memory>
 
-static Image imageRadianceToIrradiance(const Image& radianceImage, ivec2 outputSize = ivec2(256, 128), u32 sampleCount = 4000, bool scramblingEnabled = false)
-{
-	// TODO: share this code with CLI experiments framework
-
-	Image downsampledRadianceImage;
-	if (radianceImage.getSize() == outputSize)
-	{
-		downsampledRadianceImage = radianceImage;
-	}
-	else
-	{
-		downsampledRadianceImage = imageResize(radianceImage, outputSize);
-	}
-
-	const ivec2 outputSizeMinusOne = outputSize - 1;
-	const vec2 outputSizeMinusOneRcp = vec2(1.0) / vec2(outputSizeMinusOne);
-
-	std::vector<float> texelWeights;
-	std::vector<float> texelAreas;
-	float weightSum = 0.0;
-	
-	ImageBase<vec3> directionImage(outputSize);
-	for (int y = 0; y < outputSize.y; ++y)
-	{
-		for (int x = 0; x < outputSize.x; ++x)
-		{
-			ivec2 pixelPos(x, y);
-			float area = latLongTexelArea(pixelPos, outputSize);
-
-			const vec3 radiance = (vec3)downsampledRadianceImage.at(pixelPos);
-			float intensity = dot(vec3(1.0f / 3.0f), radiance);
-			float weight = intensity * area;
-
-			weightSum += weight;
-			texelWeights.push_back(weight);
-			texelAreas.push_back(area);
-
-			vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * outputSizeMinusOneRcp;
-			directionImage.at(pixelPos) = latLongTexcoordToCartesian(uv);
-		}
-	}
-
-	Image irradianceImage = Image(outputSize);
-
-	DiscreteDistribution<float> discreteDistribution(texelWeights.data(), texelWeights.size(), weightSum);
-
-	irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
-	{
-		u32 pixelIndex = pixelPos.x + pixelPos.y * outputSize.x;
-		u32 seed = scramblingEnabled ? pixelIndex : 0;
-		std::mt19937 rng(seed);
-
-		vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * outputSizeMinusOneRcp;
-		vec3 normal = latLongTexcoordToCartesian(uv);
-		vec3 accum = vec3(0.0f);
-
-		for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
-		{
-			u32 sampleIndex = (u32)discreteDistribution(rng);
-			float sampleProbability = texelWeights[sampleIndex] / weightSum;
-			vec3 sampleDirection = directionImage.at(sampleIndex);
-			float cosTerm = dotMax0(normal, sampleDirection);
-			float sampleArea = (float)texelAreas[sampleIndex];
-			vec3 sampleRadiance = (vec3)downsampledRadianceImage.at(sampleIndex) * sampleArea;
-			accum += sampleRadiance * cosTerm / sampleProbability;
-		}
-
-		accum /= sampleCount * pi;
-
-		pixel = vec4(accum, 1.0f);
-	});
-
-	return irradianceImage;
-}
-
 struct ExperimentResults
 {
     ExperimentResults(const std::string& l = "", ImTextureID r = 0, ImTextureID ir = 0, ImTextureID s = 0)
@@ -114,14 +39,18 @@ public:
 
 	ProbulatorGui()
 	{
+		addAllExperiments(m_experimentList);
+		for (auto& e : m_experimentList)
+		{
+			m_availableExperimentNames.push_back(e->m_name);
+		}
+
 		memset(m_mouseButtonDown, 0, sizeof(m_mouseButtonDown));
 		memset(m_mouseButtonDownPosition, 0, sizeof(m_mouseButtonDownPosition));
 		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
-        addAllExperiments(m_experimentList);
-        for (auto& e : m_experimentList)
-            m_experimentNames.push_back(e->m_name);
+		m_allExperimentNames = m_availableExperimentNames;
 
 		m_camera.m_position = vec3(0.0f, 0.0f, 1.5f);
 		m_camera.m_near = 0.01f;
@@ -161,6 +90,16 @@ public:
 			ImGuiWindowFlags_NoMove | 
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
+
+		if (ImGui::CollapsingHeader("Mode", nullptr, true, true))
+		{
+			ImGui::PushItemWidth(-1.0f);
+			if (ImGui::Combo("", &m_currentExperiment, getComboItem, (void*)&m_allExperimentNames, (int)m_allExperimentNames.size()))
+			{
+				generateIrradianceImage();
+			}
+			ImGui::PopItemWidth();
+		}
 
 		if (ImGui::CollapsingHeader("Environment", nullptr, true, false))
 		{
@@ -209,7 +148,7 @@ public:
 			{
 				cameraModeNames[i] = toString((CameraMode)i);
 			}
-			ImGui::Combo("Mode", reinterpret_cast<int*>(&m_cameraController.m_mode), cameraModeNames, CameraModeCount);
+			ImGui::Combo("Mode##Camera", reinterpret_cast<int*>(&m_cameraController.m_mode), cameraModeNames, CameraModeCount);
 			ImGui::SliderFloat("FOV", &m_camera.m_fov, 0.1f, pi);
 			ImGui::SliderFloat("Near", &m_camera.m_near, 0.01f, 10.0f);
 			ImGui::SliderFloat("Far", &m_camera.m_far, m_camera.m_near, 1000.0f);
@@ -220,25 +159,25 @@ public:
 			}
 		}
 
-        if (ImGui::CollapsingHeader("Basis Experiments"), nullptr, true, true)
+        if (ImGui::CollapsingHeader("Basis Experiments", nullptr, true, true))
         {
             
 
             static int currItem = 0;
-            if (m_experimentNames.size())
+            if (m_availableExperimentNames.size())
             {
-                ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&m_experimentNames, 
-                                              (int)m_experimentNames.size());
+                ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&m_availableExperimentNames, 
+                                              (int)m_availableExperimentNames.size());
                 ImGui::SameLine();
                 if (ImGui::Button("+"))
                 {
-                    ExperimentResults* e = new ExperimentResults(m_experimentNames[currItem], 
+                    ExperimentResults* e = new ExperimentResults(m_availableExperimentNames[currItem], 
                                                                  getImTextureID(m_irradianceTexture), 
                                                                  getImTextureID(m_irradianceTexture),
                                                                  getImTextureID(m_irradianceTexture));
                     m_experimentResultsList.push_back(std::unique_ptr<ExperimentResults>(e));
 
-                    m_experimentNames.erase(m_experimentNames.begin() + currItem);
+                    m_availableExperimentNames.erase(m_availableExperimentNames.begin() + currItem);
                     currItem = 0;
                 }
             }
@@ -315,7 +254,7 @@ public:
                 }
 
                 // add basis back to drop down list
-                m_experimentNames.push_back(deleteMe);
+                m_availableExperimentNames.push_back(deleteMe);
             }
 
             ImGui::Columns(1);
@@ -461,6 +400,20 @@ public:
 		m_worldMatrix[3] = vec4(-m_model->m_center / largestSide, 1.0f);
 	}
 
+	void generateIrradianceImage()
+	{
+		assert(m_experimentData);
+
+		Experiment* experiment = m_experimentList[m_currentExperiment].get();
+
+		experiment->runWithDepencencies(*m_experimentData);
+
+		TextureFilter filter = makeTextureFilter(GL_REPEAT, GL_LINEAR);
+		filter.wrapV = GL_CLAMP_TO_EDGE;
+
+		m_irradianceTexture = createTextureFromImage(experiment->m_irradianceImage, filter);
+	}
+
 	void loadEnvmap(const char* filename)
 	{
 		printf("Loading envmap '%s'\n", filename);
@@ -474,13 +427,15 @@ public:
 			m_radianceImage.fill(vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		}
 
-		Image irradianceImage = imageRadianceToIrradiance(m_radianceImage);
-
 		TextureFilter filter = makeTextureFilter(GL_REPEAT, GL_LINEAR);
 		filter.wrapV = GL_CLAMP_TO_EDGE;
 
 		m_radianceTexture = createTextureFromImage(m_radianceImage, filter);
-		m_irradianceTexture = createTextureFromImage(irradianceImage, filter);
+
+		m_experimentData = std::unique_ptr<Experiment::SharedData>(new Experiment::SharedData(m_sampleCount, m_irradianceImageSize, m_radianceImage));
+		resetAllExperiments(m_experimentList);
+
+		generateIrradianceImage();
 	}
 
 	void onMouseButton(int button, int action, int mods)
@@ -523,9 +478,14 @@ public:
 	Camera m_smoothCamera;
 	CameraController m_cameraController;
 
-    std::vector<std::string> m_experimentNames;
+	const u32 m_sampleCount = 20000;
+	const ivec2 m_irradianceImageSize = ivec2(256, 128);
+	std::unique_ptr<Experiment::SharedData> m_experimentData;
+	std::vector<std::string> m_allExperimentNames;
+    std::vector<std::string> m_availableExperimentNames;
     Probulator::ExperimentList m_experimentList;
     ExperimentResultsList m_experimentResultsList;
+	int m_currentExperiment = 0;
 
 	mat4 m_worldMatrix = mat4(1.0f);
 	mat4 m_viewMatrix = mat4(1.0f);

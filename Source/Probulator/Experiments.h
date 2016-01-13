@@ -45,27 +45,41 @@ public:
         SharedData(u32 sampleCount, ivec2 outputSize, const char* hdrFilename)
             : m_directionImage(outputSize)
             , m_outputSize(outputSize)
+			, m_sampleCount(sampleCount)
         {
-            m_sampleCount = sampleCount;
-
             if (!m_radianceImage.readHdr(hdrFilename))
             {
                 return;
             }
-
-            if (m_radianceImage.getSize() != outputSize)
-            {
-                m_radianceImage = imageResize(m_radianceImage, outputSize);
-            }
-
-            m_directionImage.forPixels2D([outputSize](vec3& direction, ivec2 pixelPos)
-            {
-                vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(outputSize - ivec2(1));
-                direction = latLongTexcoordToCartesian(uv);
-            });
-
-            GenerateSamples(sampleCount, m_radianceImage, m_radianceSamples);
+			
+			initialize();
         }
+
+		SharedData(u32 sampleCount, ivec2 outputSize, const Image& radianceImage)
+			: m_directionImage(outputSize)
+			, m_outputSize(outputSize)
+			, m_sampleCount(sampleCount)
+			, m_radianceImage(radianceImage)
+
+		{
+			initialize();
+		}
+
+		void initialize()
+		{
+			if (m_radianceImage.getSize() != m_outputSize)
+			{
+				m_radianceImage = imageResize(m_radianceImage, m_outputSize);
+			}
+
+			m_directionImage.forPixels2D([&](vec3& direction, ivec2 pixelPos)
+			{
+				vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(m_outputSize - ivec2(1));
+				direction = latLongTexcoordToCartesian(uv);
+			});
+
+			GenerateSamples(m_sampleCount, m_radianceImage, m_radianceSamples);
+		}
 
         bool isValid() const
         {
@@ -139,6 +153,11 @@ public:
         }
         return *this;
     }
+
+	void reset()
+	{
+		m_executed = false;
+	}
 
     // Experiment metadata
 
@@ -544,5 +563,6 @@ public:
 };
 
 void addAllExperiments(ExperimentList& experiments);
+void resetAllExperiments(ExperimentList& experiments);
 
 } // namespace Probulator

@@ -68,4 +68,12 @@ void addAllExperiments(ExperimentList& experiments)
         .setEnabled(false); // disabled by default, as it requires *very* long time to converge
 }
 
+void resetAllExperiments(ExperimentList& experiments)
+{
+	for (auto& e : experiments)
+	{
+		e->reset();
+	}
+}
+
 } // namespace Probulator
