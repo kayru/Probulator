@@ -49,6 +49,13 @@ namespace Probulator
 	{
 		HBasisT<float, L> result;
 
+        if(p.z < 0.0f) {
+            for(size_t i = 0; i < L; ++i)
+                result[i] = 0.0f;
+
+            return result;
+        }
+
 		const float x = -p.x;
 		const float y = -p.y;
 		const float z = p.z;
