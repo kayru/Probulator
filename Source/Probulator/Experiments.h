@@ -627,7 +627,7 @@ public:
 
 	void getProperties(std::vector<Property>& outProperties) override
 	{
-		Experiment::getProperties(outProperties);
+		ExperimentSGBase::getProperties(outProperties);
 		outProperties.push_back(Property("Population count", reinterpret_cast<int*>(&m_populationCount)));
 		outProperties.push_back(Property("Generation count", reinterpret_cast<int*>(&m_generationCount)));
 	}
