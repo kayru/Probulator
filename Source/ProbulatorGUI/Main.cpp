@@ -9,6 +9,7 @@
 #include <Probulator/DiscreteDistribution.h>
 #include <Probulator/Experiments.h>
 
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
@@ -99,6 +100,43 @@ public:
 				generateIrradianceImage();
 			}
 			ImGui::PopItemWidth();
+
+			Experiment* experiment = m_experimentList[m_currentExperiment].get();
+			std::vector<Experiment::Property> properties;
+			experiment->getProperties(properties);
+
+			for (Experiment::Property& p : properties)
+			{
+				switch (p.m_type)
+				{
+				case Experiment::PropertyType_Bool:
+					ImGui::Checkbox(p.m_name, p.m_data.asBool);
+					break;
+				case Experiment::PropertyType_Float:
+					ImGui::InputFloat(p.m_name, p.m_data.asFloat);
+					break;
+				case Experiment::PropertyType_Int:
+					ImGui::InputInt(p.m_name, p.m_data.asInt);
+					break;
+				case Experiment::PropertyType_Vec2:
+					ImGui::InputFloat2(p.m_name, glm::value_ptr(*p.m_data.asVec2));
+					break;
+				case Experiment::PropertyType_Vec3:
+					ImGui::InputFloat3(p.m_name, glm::value_ptr(*p.m_data.asVec3));
+					break;
+				case Experiment::PropertyType_Vec4:
+					ImGui::InputFloat4(p.m_name, glm::value_ptr(*p.m_data.asVec4));
+					break;
+				default:
+					assert(false && "Unexpected property type");
+				}
+			}
+
+			if (ImGui::Button("Execute"))
+			{
+				experiment->reset();
+				generateIrradianceImage();
+			}
 		}
 
 		if (ImGui::CollapsingHeader("Environment", nullptr, true, false))

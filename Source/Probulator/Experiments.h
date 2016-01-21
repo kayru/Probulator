@@ -22,6 +22,38 @@ class Experiment
 {
 public:
 
+	enum PropertyType
+	{
+		PropertyType_Bool,
+		PropertyType_Float,
+		PropertyType_Int,
+		PropertyType_Vec2,
+		PropertyType_Vec3,
+		PropertyType_Vec4,
+	};
+
+	struct Property
+	{
+		Property(const char* name, bool* data) : m_name(name), m_type(PropertyType_Bool) { m_data.asBool = data; }
+		Property(const char* name, float* data) : m_name(name), m_type(PropertyType_Float) { m_data.asFloat = data; }
+		Property(const char* name, int* data) : m_name(name), m_type(PropertyType_Int) { m_data.asInt = data; }
+		Property(const char* name, vec2* data) : m_name(name), m_type(PropertyType_Vec2) { m_data.asVec2 = data; }
+		Property(const char* name, vec3* data) : m_name(name), m_type(PropertyType_Vec3) { m_data.asVec3 = data; }
+		Property(const char* name, vec4* data) : m_name(name), m_type(PropertyType_Vec4) { m_data.asVec4 = data; }		
+
+		const char* m_name;
+		PropertyType m_type;
+		union
+		{
+			bool* asBool;
+			float* asFloat;
+			int* asInt;
+			vec2* asVec2;
+			vec3* asVec3;
+			vec4* asVec4;
+		} m_data;
+	};
+
     class SharedData
     {
     private:
@@ -104,6 +136,11 @@ public:
         ivec2 m_outputSize;
         u32 m_sampleCount;
     };
+
+	virtual void getProperties(std::vector<Property>& outProperties)
+	{
+		outProperties.push_back(Property("Enabled", &m_enabled));
+	}
 
     virtual void run(SharedData& data) = 0;
 
@@ -210,6 +247,12 @@ public:
         });
     }
 
+	void getProperties(std::vector<Property>& outProperties) override
+	{
+		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Hemisphere sample count", reinterpret_cast<int*>(&m_hemisphereSampleCount)));
+	}
+
     ExperimentMC& setHemisphereSampleCount(u32 v) { m_hemisphereSampleCount = v; return *this; }
 
     u32 m_hemisphereSampleCount = 1000;
@@ -273,6 +316,13 @@ public:
         data.GenerateIrradianceSamples(m_irradianceImage);
     }
 
+	void getProperties(std::vector<Property>& outProperties) override
+	{
+		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Sample count", reinterpret_cast<int*>(&m_sampleCount)));
+		outProperties.push_back(Property("Jitter enabled", &m_jitterEnabled));
+	}
+
     ExperimentMCIS& setSampleCount(u32 v)
     {
         m_sampleCount = v;
@@ -305,7 +355,7 @@ public:
 
         if (m_lambda != 0.0f)
         {
-            shReduceRinging<vec3, L>(shRadiance, m_lambda);
+            shReduceRinging<vec3, L>(shRadiance, m_lambda); // TODO: re-normalize result
         }
 
         m_radianceImage = Image(data.m_outputSize);
@@ -322,6 +372,12 @@ public:
             m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
         });
     }
+
+	void getProperties(std::vector<Property>& outProperties) override
+	{
+		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Lambda", &m_lambda));
+	}
 
     ExperimentSH<L>& setLambda(float v)
     {
@@ -436,6 +492,14 @@ public:
         generateRadianceImage(data);
         generateIrradianceImage(data);
     }
+
+	void getProperties(std::vector<Property>& outProperties) override
+	{
+		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Ambient lobe enabled", &m_ambientLobeEnabled));
+		outProperties.push_back(Property("Lambda", &m_lambda));
+		outProperties.push_back(Property("BRDF Lambda", &m_brdfLambda));
+	}
 
     bool m_ambientLobeEnabled = false;
     u32 m_lobeCount = 1;
@@ -558,8 +622,14 @@ public:
     {
         m_lobes = sgFitNNLeastSquares(m_lobes, radianceSamples); // NNLS is used to seed GA
         m_lobes = sgFitGeneticAlgorithm(m_lobes, radianceSamples, m_populationCount, m_generationCount);
-
     }
+
+	void getProperties(std::vector<Property>& outProperties) override
+	{
+		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Population count", reinterpret_cast<int*>(&m_populationCount)));
+		outProperties.push_back(Property("Generation count", reinterpret_cast<int*>(&m_generationCount)));
+	}
 };
 
 void addAllExperiments(ExperimentList& experiments);
