@@ -1,5 +1,10 @@
 #include <Probulator/Experiments.h>
 
+#include <Probulator/ExperimentMonteCarlo.h>
+#include <Probulator/ExperimentSH.h>
+#include <Probulator/ExperimentSG.h>
+#include <Probulator/ExperimentHBasis.h>
+
 namespace Probulator
 {
 
