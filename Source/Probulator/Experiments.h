@@ -496,6 +496,7 @@ public:
 	void getProperties(std::vector<Property>& outProperties) override
 	{
 		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Lobe count", reinterpret_cast<int*>(&m_lobeCount)));
 		outProperties.push_back(Property("Ambient lobe enabled", &m_ambientLobeEnabled));
 		outProperties.push_back(Property("Lambda", &m_lambda));
 		outProperties.push_back(Property("BRDF Lambda", &m_brdfLambda));
