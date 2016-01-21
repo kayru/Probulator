@@ -248,7 +248,7 @@ public:
         m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
         {
             u32 pixelIndex = pixelPos.x + pixelPos.y * m_irradianceImage.getWidth();
-            u32 seed = m_scramblingEnabled ? pixelIndex : 0;
+            u32 seed = m_jitterEnabled ? pixelIndex : 0;
             std::mt19937 rng(seed);
 
             vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * imageSizeMinusOneRcp;
@@ -279,14 +279,14 @@ public:
         return *this;
     }
 
-    ExperimentMCIS& setScramblingEnabled(bool state)
+    ExperimentMCIS& setJitterEnabled(bool state)
     {
-        m_scramblingEnabled = state;
+        m_jitterEnabled = state;
         return *this;
     }
 
     u32 m_sampleCount = 1000;
-    bool m_scramblingEnabled = false;
+    bool m_jitterEnabled = false;
 };
 
 template <size_t L>
