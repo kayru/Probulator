@@ -23,7 +23,7 @@ void addAllExperiments(ExperimentList& experiments)
         .setJitterEnabled(false) // prefer errors due to correlation instead of noise due to jittering
         .setUseAsReference(true); // other experiments will be compared against this
 
-    addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling, Scrambled]", "MCISS")
+    addExperiment<ExperimentMCIS>(experiments, "Monte Carlo [Importance Sampling, Jittered]", "MCISS")
         .setSampleCount(5000)
         .setJitterEnabled(true)
         .setEnabled(false); // disabled by default, since MCIS mode is superior
