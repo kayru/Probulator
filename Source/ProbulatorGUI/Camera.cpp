@@ -11,9 +11,12 @@ Probulator::mat4 Camera::getProjectionMatrix() const
 
 mat4 Camera::getViewMatrix() const
 {
-	float x = -dot((vec3)m_orientation[0], (vec3)m_position);
-	float y = -dot((vec3)m_orientation[1], (vec3)m_position);
-	float z = -dot((vec3)m_orientation[2], (vec3)m_position);
+	vec3 eyePosition = m_position + m_orbitRadius * m_orientation[2];
+
+	vec3 p;
+	p.x = -dot((vec3)m_orientation[0], eyePosition);
+	p.y = -dot((vec3)m_orientation[1], eyePosition);
+	p.z = -dot((vec3)m_orientation[2], eyePosition);
 
 	mat3 r = transpose(m_orientation);
 
@@ -21,8 +24,7 @@ mat4 Camera::getViewMatrix() const
 		vec4(r[0], 0.0),
 		vec4(r[1], 0.0),
 		vec4(r[2], 0.0),
-		vec4(x, y, z, 1.0f)
-	);
+		vec4(p, 1.0f));
 }
 
 void Camera::rotate(float deltaAroundUp, float deltaAroundRight)
@@ -32,17 +34,19 @@ void Camera::rotate(float deltaAroundUp, float deltaAroundRight)
 	m_orientation = rotUp * rotRight * m_orientation;
 }
 
-void Camera::move(const vec3& delta)
+void Camera::moveViewSpace(const vec3& viewSpaceDelta)
 {
-	m_position += delta.x * m_orientation[0];
-	m_position += delta.y * m_orientation[1];
-	m_position -= delta.z * m_orientation[2];
+	vec3 worldSpaceDelta = m_orientation * viewSpaceDelta;
+	m_position += worldSpaceDelta;
+}
+
+void Camera::moveWorldSpace(const vec3& worldSpaceDelta)
+{
+	m_position += worldSpaceDelta;
 }
 
 void CameraController::update(const InputState& input, Camera& camera)
 {
-	// TODO: orbit camera mode update
-
 	float moveSpeed = m_moveSpeed * input.moveSpeedMultiplier;
 	float rotateSpeed = m_rotateSpeed * input.rotateSpeedMultiplier;
 
@@ -50,15 +54,36 @@ void CameraController::update(const InputState& input, Camera& camera)
 		input.rotateAroundUp * rotateSpeed,
 		input.rotateAroundRight * rotateSpeed);
 
-	vec3 moveDirection = vec3(
+	vec3 viewSpaceDelta = vec3(
 		input.moveRight,
 		input.moveUp,
-		input.moveForward);
+		-input.moveForward);
 
-	float moveDirectionLength = length(moveDirection);
-	if (moveDirectionLength > 0.0f)
+	if (m_mode == CameraMode_Orbit)
 	{
-		camera.move(moveDirection / moveDirectionLength * moveSpeed);
+		if (camera.m_orbitRadius == 0.0f)
+		{
+			camera.moveViewSpace(vec3(0.0f, 0.0f, -m_orbitRadius));
+		}
+
+		m_orbitRadius = max(0.0f, m_orbitRadius - input.scrollDelta.y * 0.25f);
+
+		camera.m_orbitRadius = m_orbitRadius;
+	}
+	else
+	{
+		if (camera.m_orbitRadius != 0.0f)
+		{
+			camera.moveViewSpace(vec3(0.0f, 0.0f, m_orbitRadius));
+		}
+
+		camera.m_orbitRadius = 0.0f;
+	}
+
+	float viewSpaceDeltaLength = length(viewSpaceDelta);
+	if (viewSpaceDeltaLength > 0.0f)
+	{
+		camera.moveViewSpace(moveSpeed * viewSpaceDelta / viewSpaceDeltaLength);
 	}
 }
 
@@ -79,8 +104,6 @@ const char* toString(CameraMode mode)
 Camera CameraController::interpolate(const Camera& x, const Camera& y, 
 	float positionAlpha, float orientationAlpha, float attributeAlpha)
 {
-	// TODO: orbit camera mode interpolation
-
 	Camera result;
 
 	result.m_aspect = mix(x.m_aspect, y.m_aspect, attributeAlpha);
@@ -88,6 +111,7 @@ Camera CameraController::interpolate(const Camera& x, const Camera& y,
 	result.m_near = mix(x.m_near, y.m_near, attributeAlpha);
 	result.m_far = mix(x.m_far, y.m_far, attributeAlpha);
 	result.m_position = mix(x.m_position, y.m_position, positionAlpha);
+	result.m_orbitRadius = mix(x.m_orbitRadius, y.m_orbitRadius, positionAlpha);
 
 	glm::quat qx = (glm::quat)x.m_orientation;
 	glm::quat qy = (glm::quat)y.m_orientation;

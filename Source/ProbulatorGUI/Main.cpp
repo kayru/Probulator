@@ -53,9 +53,12 @@ public:
 
 		m_allExperimentNames = m_availableExperimentNames;
 
-		m_camera.m_position = vec3(0.0f, 0.0f, 1.5f);
+		m_camera.m_position = vec3(0.0f, 0.0f, 0.0f);
 		m_camera.m_near = 0.01f;
 		m_camera.m_far = 100.0f;
+		m_camera.m_orbitRadius = 1.5f;
+
+		m_cameraController.m_orbitRadius = m_camera.m_orbitRadius;
 
 		m_smoothCamera = m_camera;
 	}
@@ -181,20 +184,17 @@ public:
 
 		if (ImGui::CollapsingHeader("Camera", nullptr, true, false))
 		{
-			const char* cameraModeNames[CameraModeCount];
-			for (u32 i = 0; i < CameraModeCount; ++i)
+			for (int i = 0; i < CameraModeCount; ++i)
 			{
-				cameraModeNames[i] = toString((CameraMode)i);
+				if (i != 0) ImGui::SameLine();
+				ImGui::RadioButton(toString((CameraMode)i), reinterpret_cast<int*>(&m_cameraController.m_mode), i);
 			}
-			ImGui::Combo("Mode##Camera", reinterpret_cast<int*>(&m_cameraController.m_mode), cameraModeNames, CameraModeCount);
+
 			ImGui::SliderFloat("FOV", &m_camera.m_fov, 0.1f, pi);
 			ImGui::SliderFloat("Near", &m_camera.m_near, 0.01f, 10.0f);
 			ImGui::SliderFloat("Far", &m_camera.m_far, m_camera.m_near, 1000.0f);
-			ImGui::DragFloat3("Position", &m_camera.m_position.x, 0.01f);
-			if (m_cameraController.m_mode == CameraMode_Orbit)
-			{
-				ImGui::DragFloat3("Orbit center", &m_cameraController.m_orbitCenter.x, 0.01f);
-			}
+			ImGui::DragFloat3("Position", glm::value_ptr(m_camera.m_position), 0.01f);
+			ImGui::SliderFloat("Orbit radius", &m_cameraController.m_orbitRadius, 0.0f, 10.0f);
 		}
 
         if (ImGui::CollapsingHeader("Basis Experiments", nullptr, true, true))
@@ -327,6 +327,8 @@ public:
 			cameraControllerInput.rotateAroundRight = mouseDelta.y;
 		}
 
+		cameraControllerInput.scrollDelta = m_mouseScrollDelta;
+
 		if (m_keyDown[GLFW_KEY_LEFT_CONTROL])
 		{
 			cameraControllerInput.moveSpeedMultiplier *= 0.1f;
@@ -378,6 +380,7 @@ public:
 		updateImGui();
 
 		m_oldMousePosition = m_mousePosition;
+		m_mouseScrollDelta = vec2(0.0f);
 	}
 
 	void render()
@@ -501,6 +504,11 @@ public:
 		m_keyDown[key] = action != GLFW_RELEASE;
 	}
 
+	void onScroll(float x, float y)
+	{
+		m_mouseScrollDelta += vec2(x, y);
+	}
+
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
@@ -538,6 +546,7 @@ public:
 	vec2 m_mouseButtonDownPosition[MouseButtonCount];
 	vec2 m_mousePosition = vec2(0.0f);
 	vec2 m_oldMousePosition = vec2(0.0f);
+	vec2 m_mouseScrollDelta = vec2(0.0f);
 	bool m_keyDown[GLFW_KEY_LAST+1];
 };
 
@@ -563,8 +572,8 @@ static void cbScroll(GLFWwindow* window, double xoffset, double yoffset)
 
 	if (!ImGui::GetIO().WantCaptureMouse)
 	{
-		// ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
-		// app->onScroll();
+		ProbulatorGui* app = (ProbulatorGui*)glfwGetWindowUserPointer(window);
+		app->onScroll((float)xoffset, (float)yoffset);
 	}
 }
 
