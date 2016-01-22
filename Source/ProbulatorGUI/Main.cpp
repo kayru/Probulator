@@ -610,7 +610,7 @@ static void cbChar(GLFWwindow* window, unsigned int c)
 
 int main(int argc, char** argv)
 {
-	printf("Probulator GUI starting ...\n");
+	printf("Probulator starting ...\n");
 
 	glfwInit();
 
@@ -622,7 +622,7 @@ int main(int argc, char** argv)
 	const ivec2 defaultWindowSize = ivec2(1280, 720);
 	GLFWwindow * window = glfwCreateWindow(
 		defaultWindowSize.x, defaultWindowSize.y,
-		"Probulator GUI", nullptr, nullptr);
+		"Probulator", nullptr, nullptr);
 
 	glfwMakeContextCurrent(window);
 
