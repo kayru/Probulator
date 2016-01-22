@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef USE_OPENCL
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #ifdef __APPLE__
 #include "OpenCL/opencl.h"
 #else
