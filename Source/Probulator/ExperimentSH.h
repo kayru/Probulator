@@ -12,11 +12,14 @@ public:
     void run(SharedData& data) override
     {
         SphericalHarmonicsT<vec3, L> shRadiance = {};
-        const u32 sampleCount = (u32)data.m_radianceSamples.size();
-        for (const RadianceSample& sample : data.m_radianceSamples)
-        {
-            shAddWeighted(shRadiance, shEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
-        }
+
+		const ivec2 imageSize = data.m_outputSize;
+		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
+		{
+			float texelArea = latLongTexelArea(pixelPos, imageSize);
+			vec3 radiance = (vec3)data.m_radianceImage.at(pixelPos);
+			shAddWeighted(shRadiance, shEvaluate<L>(direction), radiance * texelArea);
+		});
 
         if (m_lambda != 0.0f)
         {
@@ -60,11 +63,14 @@ public:
     void run(SharedData& data) override
     {
         SphericalHarmonicsL1RGB shRadiance = {};
-        const u32 sampleCount = (u32)data.m_radianceSamples.size();
-        for (const RadianceSample& sample : data.m_radianceSamples)
-        {
-            shAddWeighted(shRadiance, shEvaluateL1(sample.direction), sample.value * (fourPi / sampleCount));
-        }
+
+		const ivec2 imageSize = data.m_outputSize;
+		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
+		{
+			float texelArea = latLongTexelArea(pixelPos, imageSize);
+			vec3 radiance = (vec3)data.m_radianceImage.at(pixelPos);
+			shAddWeighted(shRadiance, shEvaluateL1(direction), radiance * texelArea);
+		});
 
         m_radianceImage = Image(data.m_outputSize);
         m_irradianceImage = Image(data.m_outputSize);
