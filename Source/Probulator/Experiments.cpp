@@ -44,6 +44,8 @@ void addAllExperiments(ExperimentList& experiments)
     addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");
     addExperiment<ExperimentSH<4>>(experiments, "Spherical Harmonics L4", "SHL4");
 
+	addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2 [Windowed]", "SHL2W").setSquaredLaplacianFraction(0.25f);
+
     addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
         .setInput(experimentMCIS);
     addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")

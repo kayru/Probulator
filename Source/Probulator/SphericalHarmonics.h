@@ -13,6 +13,9 @@ namespace Probulator
 
 		const T& operator [] (size_t i) const { return data[i]; }
 		T& operator [] (size_t i) { return data[i]; }
+
+		T& at(int l, int m) { return data[l * l + l + m]; }
+		const T& at(int l, int m) const { return data[l * l + l + m]; }
 	};
 
 	typedef SphericalHarmonicsT<float, 1> SphericalHarmonicsL1;
@@ -23,7 +26,6 @@ namespace Probulator
 	template <typename T, size_t L> 
 	SphericalHarmonicsL1 shEvaluateL1(vec3 p);
 	SphericalHarmonicsL2 shEvaluateL2(vec3 p);
-	float shEvaluateDiffuseL2(const SphericalHarmonicsL2& sh, vec3 n);
 
 	inline size_t shSize(size_t L) { return (L + 1)*(L + 1); }
 
@@ -149,6 +151,34 @@ namespace Probulator
 	}
 
 	template <typename T, size_t L>
+	inline SphericalHarmonicsT<T, L> shConvolveDiffuse(SphericalHarmonicsT<T, L>& sh)
+	{
+		SphericalHarmonicsT<T, L> result;
+
+		// https://cseweb.ucsd.edu/~ravir/papers/envmap/envmap.pdf equation 8
+
+		const float A[5] = {
+			pi,
+			pi * 2.0f / 3.0f,
+			pi * 1.0f / 4.0f,
+			0.0f,
+			-pi * 1.0f / 24.0f
+		};
+
+		int i = 0;
+		for (int l = 0; l <= (int)L; ++l)
+		{
+			for (int m = -l; m <= l; ++m)
+			{
+				result[i] = sh[i] * A[l];
+				++i;
+			}
+		}
+
+		return result;
+	}
+
+	template <typename T, size_t L>
 	inline T shEvaluateDiffuse(const SphericalHarmonicsT<T, L>& sh, const vec3& direction)
 	{
 		static_assert(L<=4, "Spherical Harmonics above L4 are not supported");
@@ -218,8 +248,69 @@ namespace Probulator
 		return shEvaluateDiffuse<T, 2>(sh, direction);
 	}
 
+	template <size_t L>
+	float shFindWindowingLambda(const SphericalHarmonicsT<float, L>& sh, float squaredLaplacianFraction)
+	{
+		// http://www.ppsloan.org/publications/StupidSH36.pdf
+		// Appendix A7 Solving for Lambda to Reduce the Squared Laplacian
+
+		float tableL[L + 1];
+		float tableB[L + 1];
+
+		tableL[0] = 0.0f;
+		tableB[0] = 0.0f;
+
+		for (int l = 1; l <= (int)L; ++l)
+		{
+			tableL[l] = float(sqr(l) * sqr(l + 1));
+
+			float B = 0.0f;
+			for (int m = -1; m <= l; ++m)
+			{
+				B += sqr(sh.at(l, m));
+			}
+			tableB[l] = B;
+		}
+
+		float squaredLaplacian = 0.0f;
+
+		for (int l = 1; l <= (int)L; ++l)
+		{
+			squaredLaplacian += tableL[l] * tableB[l];
+		}
+
+		const float targetSquaredLaplacian = squaredLaplacian * squaredLaplacianFraction;
+
+		float lambda = 0.0f;
+
+		const u32 iterationLimit = 10000000;
+		for (u32 i = 0; i < iterationLimit; ++i)
+		{
+			float f = 0.0f;
+			float fd = 0.0f;
+
+			for (int l = 1; l <= (int)L; ++l)
+			{
+				f += tableL[l] * tableB[l] / sqr(1.0f + lambda * tableL[l]);
+				fd += (2.0f * sqr(tableL[l]) * tableB[l]) / cube(1.0f + lambda * tableL[l]);
+			}
+
+			f = targetSquaredLaplacian - f;
+
+			float delta = -f / fd;
+			lambda += delta;
+
+			if (abs(delta) < 1e-6f)
+			{
+				break;
+			}
+		}
+
+		return lambda;
+	}
+
 	template <typename T, size_t L>
-	void shReduceRinging(SphericalHarmonicsT<T, L>& sh, float lambda)
+	void shApplyWindowing(SphericalHarmonicsT<T, L>& sh, float lambda)
 	{
 		// From Peter-Pike Sloan's Stupid SH Tricks
 		// http://www.ppsloan.org/publications/StupidSH36.pdf
@@ -256,5 +347,16 @@ namespace Probulator
 	inline float shMeanSquareErrorScalar(const SphericalHarmonicsT<T, L>& sh, const std::vector<RadianceSample>& radianceSamples)
 	{
 		return dot(shMeanSquareError(sh, radianceSamples), T(1.0f / 3.0f));
+	}
+
+	template <size_t L>
+	inline SphericalHarmonicsT<float, L> shLuminance(const SphericalHarmonicsT<vec3, L>& sh)
+	{
+		SphericalHarmonicsT<float, L> result;
+		for (size_t i = 0; i < shSize(L); ++i)
+		{
+			result[i] = rgbLuminance(sh[i]);
+		}
+		return result;
 	}
 }
