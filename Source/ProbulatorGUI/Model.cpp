@@ -1,67 +1,17 @@
 #include "Model.h"
+#include "Shaders.h"
 
 #include <tiny_obj_loader.h>
 #include <vector>
 
-static const char* g_vertexShaderSource =
-R"(#version 150
-
-in vec3 Position;
-in vec3 Normal;
-in vec2 TexCoord0;
-
-uniform mat4 uWorldMatrix;
-uniform mat4 uViewProjMatrix;
-
-out vec3 vWorldNormal;
-out vec2 vTexCoord0;
-out vec3 vWorldPosition;
-
-void main()
-{
-	vec3 worldPosition = vec3(uWorldMatrix * vec4(Position, 1));
-	vec3 worldNormal = normalize(vec3(mat3(uWorldMatrix) * Normal));
-	gl_Position = uViewProjMatrix * vec4(worldPosition, 1);
-
-	vWorldPosition = worldPosition;
-	vWorldNormal = worldNormal;
-	vTexCoord0 = TexCoord0;
-}
-)";
-
-static const char* g_pixelShaderSource =
-R"(#version 150
-out vec4 Target;
-in vec2 vTexCoord0;
-in vec3 vWorldNormal;
-in vec3 vWorldPosition;
-uniform sampler2D Texture0;
-#define PI 3.14159265358979323846
-vec2 cartesianToLatLongTexcoord(vec3 p)
-{
-	float u = (1.0 + atan(p.x, -p.z) / PI);
-	float v = acos(p.y) / PI;
-	return vec2(u * 0.5, v);
-}
-void main()
-{
-	vec3 albedo = vec3(1.0);
-	vec3 normal = normalize(vWorldNormal);
-	vec2 texCoord = cartesianToLatLongTexcoord(normal);
-	vec3 irradiance = texture(Texture0, texCoord).xyz;
-	vec3 color = albedo * irradiance;
-	Target = vec4(color, 1.0);
-}
-)";
-
 Model::Model(const char* objFilename)
 {
-	auto vertexShader = createShaderFromSource(GL_VERTEX_SHADER, g_vertexShaderSource);
-	auto pixelShaderTexture2D = createShaderFromSource(GL_FRAGMENT_SHADER, g_pixelShaderSource);
+	auto vertexShader = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Model.vert");
+	auto pixelShader = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/Model.frag");
 
 	m_shaderProgram = createShaderProgram(
 		*vertexShader,
-		*pixelShaderTexture2D,
+		*pixelShader,
 		m_vertexDeclaration);
 
 	const bool forceGenerateNormals = false;

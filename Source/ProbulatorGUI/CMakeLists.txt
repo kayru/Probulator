@@ -2,15 +2,17 @@ add_definitions(-DNOMINMAX=1) # Never want min/max macros from Windows.h
 
 add_executable(ProbulatorGUI
 	Blitter.cpp
-	Camera.cpp
-	Main.cpp
-	Model.cpp
-	Renderer.cpp
 	Blitter.h
+	Camera.cpp
 	Camera.h
 	Common.h
+	Main.cpp
+	Model.cpp
 	Model.h
+	Renderer.cpp
 	Renderer.h
+	Shaders.cpp
+	Shaders.h
 )
 target_link_libraries(ProbulatorGUI 
 	Probulator 

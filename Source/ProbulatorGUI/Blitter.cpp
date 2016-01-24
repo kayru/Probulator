@@ -1,65 +1,14 @@
 #include "Blitter.h"
-
-static const char* g_vertexShaderSource =
-R"(#version 150
-in vec2 Position;
-in vec2 TexCoord0;
-out vec2 vTexCoord0;
-out vec4 vPosition;
-void main()
-{
-	vPosition = vec4(Position.x, Position.y, 1.0, 1.0);
-	vTexCoord0 = Position * 0.5 + 0.5;
-	vTexCoord0.y = 1.0 - vTexCoord0.y;
-	gl_Position = vPosition;
-}
-)";
-
-static const char* g_pixelShaderSourceTexture2D =
-R"(#version 150
-uniform sampler2D Texture0;
-out vec4 Target;
-in vec2 vTexCoord0;
-void main()
-{
-	Target = texture(Texture0, vTexCoord0);
-}
-)";
-
-static const char* g_pixelShaderSourceLatLongEnvmap =
-R"(#version 150
-uniform mat4 uViewMatrix;
-uniform mat4 uProjMatrix;
-uniform sampler2D Texture0;
-out vec4 Target;
-in vec4 vPosition;
-#define PI 3.14159265358979323846
-vec2 cartesianToLatLongTexcoord(vec3 p)
-{
-	float u = (1.0 + atan(p.x, -p.z) / PI);
-	float v = acos(p.y) / PI;
-	return vec2(u * 0.5, v);
-}
-void main()
-{
-	vec3 view;
-	view.x = vPosition.x / uProjMatrix[0][0];
-	view.y = vPosition.y / uProjMatrix[1][1];
-	view.z = -1.0;
-	view = normalize(view * mat3(uViewMatrix));
-	vec2 texCoord = cartesianToLatLongTexcoord(view);
-	Target = texture(Texture0, texCoord);
-}
-)";
+#include "Shaders.h"
 
 Blitter::Blitter()
 {
 	VertexDeclaration vertexDeclaration;
 	vertexDeclaration.add(VertexAttribute_Position, GL_FLOAT, GL_FALSE, 2, 0);
 
-	ShaderPtr vertexShader = createShaderFromSource(GL_VERTEX_SHADER, g_vertexShaderSource);
-	ShaderPtr pixelShaderTexture2D = createShaderFromSource(GL_FRAGMENT_SHADER, g_pixelShaderSourceTexture2D);
-	ShaderPtr pixelShaderLatLongEnvmap = createShaderFromSource(GL_FRAGMENT_SHADER, g_pixelShaderSourceLatLongEnvmap);
+	ShaderPtr vertexShader = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Blitter.vert");
+	ShaderPtr pixelShaderTexture2D = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/BlitterTexture2D.frag");
+	ShaderPtr pixelShaderLatLongEnvmap = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/BlitterLatLongEnvmap.frag");
 
 	m_programTexture2D = createShaderProgram(
 		*vertexShader,
