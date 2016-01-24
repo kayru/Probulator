@@ -67,7 +67,7 @@ public:
         {
             float area = latLongTexelArea(pixelPos, imageSize);
 
-            float intensity = dot(vec3(1.0f / 3.0f), (vec3)p);
+			float intensity = rgbLuminance((vec3)p);
             float weight = intensity * area;
 
             weightSum += weight;

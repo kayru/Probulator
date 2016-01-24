@@ -35,6 +35,18 @@ namespace Probulator
 	using glm::sinh;
 	using glm::sqrt;
 
+	template <typename T>
+	inline T sqr(const T& x)
+	{
+		return x*x;
+	}
+
+	template <typename T>
+	inline T cube(const T& x)
+	{
+		return x*x*x;
+	}
+
 	inline float saturate(float x)
 	{
 		return max(0.0f, min(x, 1.0f));
@@ -233,5 +245,10 @@ namespace Probulator
 	inline vec3 sampleCosineHemisphere(const vec2& uv)
 	{
 		return sampleCosineHemisphere(uv.x, uv.y);
+	}
+
+	inline float rgbLuminance(const vec3& color)
+	{
+		return dot(vec3(0.2126f, 0.7152f, 0.0722f), color);
 	}
 }
