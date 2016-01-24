@@ -249,7 +249,7 @@ namespace Probulator
 	}
 
 	template <size_t L>
-	float shFindWindowingLambda(const SphericalHarmonicsT<float, L>& sh, float squaredLaplacianFraction)
+	float shFindWindowingLambda(const SphericalHarmonicsT<float, L>& sh, float maxLaplacian)
 	{
 		// http://www.ppsloan.org/publications/StupidSH36.pdf
 		// Appendix A7 Solving for Lambda to Reduce the Squared Laplacian
@@ -279,7 +279,11 @@ namespace Probulator
 			squaredLaplacian += tableL[l] * tableB[l];
 		}
 
-		const float targetSquaredLaplacian = squaredLaplacian * squaredLaplacianFraction;
+		const float targetSquaredLaplacian = maxLaplacian * maxLaplacian;
+		if (squaredLaplacian <= targetSquaredLaplacian)
+		{
+			return 0.0f;
+		}
 
 		float lambda = 0.0f;
 

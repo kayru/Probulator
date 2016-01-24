@@ -19,10 +19,10 @@ public:
 			shAddWeighted(shRadiance, shEvaluate<L>(direction), radiance * texelArea);
 		});
 
-		if (m_squaredLaplacianFraction < 1.0f)
+		if (m_targetLaplacian > 0.0f)
 		{
 			SphericalHarmonicsT<float, L> sh = shLuminance(shRadiance);
-			m_lambda = shFindWindowingLambda(sh, m_squaredLaplacianFraction);
+			m_lambda = shFindWindowingLambda(sh, m_targetLaplacian);
 		}
 
 		if (m_lambda != 0.0f)
@@ -49,7 +49,7 @@ public:
 	{
 		Experiment::getProperties(outProperties);
 		outProperties.push_back(Property("Lambda", &m_lambda));
-		outProperties.push_back(Property("Squared Laplacian fraction", &m_squaredLaplacianFraction));
+		outProperties.push_back(Property("Target Laplacian", &m_targetLaplacian));
 	}
 
 	ExperimentSH<L>& setLambda(float v)
@@ -58,14 +58,14 @@ public:
 		return *this;
 	}
 
-	ExperimentSH<L>& setSquaredLaplacianFraction(float v)
+	ExperimentSH<L>& setTargetLaplacian(float v)
 	{
-		m_squaredLaplacianFraction = v;
+		m_targetLaplacian = v;
 		return *this;
 	}
 
 	float m_lambda = 0.0f;
-	float m_squaredLaplacianFraction = 1.0f; // Expressed as a fraction of the original squared Laplacian
+	float m_targetLaplacian = -1.0f;
 };
 
 class ExperimentSHL1Geomerics : public Experiment
