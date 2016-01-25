@@ -1,5 +1,4 @@
 #include "Blitter.h"
-#include "Shaders.h"
 
 Blitter::Blitter()
 {
@@ -51,14 +50,15 @@ void Blitter::drawTexture2D(const Texture& texture)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void Blitter::drawLatLongEnvmap(const Texture& texture, const mat4& viewMatrix, const mat4& projectionMatrix)
+void Blitter::drawLatLongEnvmap(const Texture& texture, const CommonShaderUniforms& shaderUniforms)
 {
 	glUseProgram(m_programLatLongEnvmap->m_native);
 
 	setTexture(*m_programLatLongEnvmap, 0, texture);
 	setVertexBuffer(*m_programLatLongEnvmap, m_vertexBuffer, sizeof(Vertex));
-	setUniformByName(*m_programLatLongEnvmap, "uViewMatrix", viewMatrix);
-	setUniformByName(*m_programLatLongEnvmap, "uProjMatrix", projectionMatrix);
+	setUniformByName(*m_programLatLongEnvmap, "uViewMatrix", shaderUniforms.viewMatrix);
+	setUniformByName(*m_programLatLongEnvmap, "uProjMatrix", shaderUniforms.projMatrix);
+	setUniformByName(*m_programLatLongEnvmap, "uExposure", shaderUniforms.exposure);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);

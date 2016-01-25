@@ -190,6 +190,7 @@ public:
 				ImGui::RadioButton(toString((CameraMode)i), reinterpret_cast<int*>(&m_cameraController.m_mode), i);
 			}
 
+			ImGui::SliderFloat("Exposure", &m_shaderUniforms.exposure, 0.0f, 100.0f, "%.3f", 4.0f);
 			ImGui::SliderFloat("FOV", &m_camera.m_fov, 0.1f, pi);
 			ImGui::SliderFloat("Near", &m_camera.m_near, 0.01f, 10.0f);
 			ImGui::SliderFloat("Far", &m_camera.m_far, m_camera.m_near, 1000.0f);
@@ -393,10 +394,10 @@ public:
 		m_camera.m_aspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
 		m_smoothCamera.m_aspect = m_camera.m_aspect;
 
-		m_viewMatrix = m_smoothCamera.getViewMatrix();
-		m_projectionMatrix = m_smoothCamera.getProjectionMatrix();
+		m_shaderUniforms.viewMatrix = m_smoothCamera.getViewMatrix();
+		m_shaderUniforms.projMatrix = m_smoothCamera.getProjectionMatrix();
 
-		m_viewPojectionMatrix = m_projectionMatrix * m_viewMatrix;
+		m_shaderUniforms.viewProjMatrix = m_shaderUniforms.projMatrix * m_shaderUniforms.viewMatrix;
 		
 		// draw scene
 
@@ -407,9 +408,9 @@ public:
 		glClearDepth(1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		m_blitter.drawLatLongEnvmap(*m_radianceTexture, m_viewMatrix, m_projectionMatrix);
+		m_blitter.drawLatLongEnvmap(*m_radianceTexture, m_shaderUniforms);
 
-		m_model->draw(*m_irradianceTexture, m_worldMatrix, m_viewPojectionMatrix);
+		m_model->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
 
 		// draw UI on top
 
@@ -519,6 +520,7 @@ public:
 	TexturePtr m_irradianceTexture;
 	Blitter m_blitter;
 	std::unique_ptr<Model> m_model;
+	CommonShaderUniforms m_shaderUniforms;
 
 	Camera m_camera;
 	Camera m_smoothCamera;
@@ -534,9 +536,6 @@ public:
 	int m_currentExperiment = 0;
 
 	mat4 m_worldMatrix = mat4(1.0f);
-	mat4 m_viewMatrix = mat4(1.0f);
-	mat4 m_projectionMatrix = mat4(1.0f);
-	mat4 m_viewPojectionMatrix = mat4(1.0f);
 
 	// If textures are used in ImGui, they must be kept alive until ImGui rendering is complete
 	std::vector<TexturePtr> m_guiTextureReferences;

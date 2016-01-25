@@ -8,3 +8,8 @@ vec2 cartesianToLatLongTexcoord(vec3 p)
 	float v = acos(p.y) / PI;
 	return vec2(u * 0.5, v);
 }
+
+vec3 tonemapLinear(vec3 rgb, float exposure)
+{
+	return rgb * exposure;
+}

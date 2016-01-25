@@ -1,5 +1,6 @@
 #include "Common.h"
 #include "Renderer.h"
+#include "Shaders.h"
 
 #include <Probulator/Math.h>
 
@@ -37,8 +38,8 @@ public:
 
 	void draw(
 		const Texture& irradianceTexture,
-		const mat4& worldMatrix, 
-		const mat4& viewProjMatrix);
+		const CommonShaderUniforms& shaderUniforms,
+		const mat4& worldMatrix);
 
 	ShaderProgramPtr m_shaderProgram;
 };

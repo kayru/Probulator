@@ -131,9 +131,9 @@ bool Model::readObj(const char* objFilename, bool forceGenerateNormals)
 }
 
 void Model::draw(
-	const Texture& irradianceTexture, 
-	const mat4& worldMatrix, 
-	const mat4& viewProjMatrix)
+	const Texture& irradianceTexture,
+	const CommonShaderUniforms& shaderUniforms,
+	const mat4& worldMatrix)
 {
 	if (!m_valid)
 		return;
@@ -143,7 +143,8 @@ void Model::draw(
 	setTexture(*m_shaderProgram, 0, irradianceTexture);
 
 	setUniformByName(*m_shaderProgram, "uWorldMatrix", worldMatrix);
-	setUniformByName(*m_shaderProgram, "uViewProjMatrix", viewProjMatrix);
+	setUniformByName(*m_shaderProgram, "uViewProjMatrix", shaderUniforms.viewProjMatrix);
+	setUniformByName(*m_shaderProgram, "uExposure", shaderUniforms.exposure);
 
 	setVertexBuffer(*m_shaderProgram, m_vertexBuffer, sizeof(Vertex));
 

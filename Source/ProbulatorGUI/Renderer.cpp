@@ -38,11 +38,11 @@ TexturePtr createTextureFromImage(
 			memcpy(rowPixelsOut, rowPixelsIn, sizeof(vec4) * w);
 		}
 
-		glTexImage2D(type, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, flippedImage.data());
+		glTexImage2D(type, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, flippedImage.data());
 	}
 	else
 	{
-		glTexImage2D(type, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, image.data());
+		glTexImage2D(type, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, image.data());
 	}
 
 
@@ -177,6 +177,16 @@ void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture
 	glUniform1i(location, slotIndex);
 }
 
+void setUniformByName(const ShaderProgram& shaderProgram, const char* name, float value)
+{
+	GLint location = glGetUniformLocation(shaderProgram.m_native, name); // TODO: cache uniform bindings
+
+	if (location == -1)
+		return;
+
+	glUniform1fv(location, 1, &value);
+}
+
 void setUniformByName(const ShaderProgram& shaderProgram, const char* name, const mat4& value)
 {
 	GLint location = glGetUniformLocation(shaderProgram.m_native, name); // TODO: cache uniform bindings
@@ -186,3 +196,4 @@ void setUniformByName(const ShaderProgram& shaderProgram, const char* name, cons
 
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
 }
+

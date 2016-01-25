@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Renderer.h"
+#include "Shaders.h"
 
 #include <Probulator/Math.h>
 
@@ -13,7 +14,7 @@ public:
 	~Blitter();
 
 	void drawTexture2D(const Texture& texture);
-	void drawLatLongEnvmap(const Texture& texture, const mat4& viewMatrix, const mat4& projectionMatrix);
+	void drawLatLongEnvmap(const Texture& texture, const CommonShaderUniforms& shaderUniforms);
 
 private:
 

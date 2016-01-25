@@ -1,5 +1,6 @@
 #include "Common.glsl"
 
+uniform float uExposure;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjMatrix;
 uniform sampler2D Texture0;
@@ -16,5 +17,7 @@ void main()
 	view.z = -1.0;
 	view = normalize(view * mat3(uViewMatrix));
 	vec2 texCoord = cartesianToLatLongTexcoord(view);
-	Target = texture(Texture0, texCoord);
+	vec4 color = texture(Texture0, texCoord);
+	color.rgb = tonemapLinear(color.rgb, uExposure);
+	Target = color;
 }
