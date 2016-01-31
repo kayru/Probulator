@@ -130,6 +130,111 @@ bool Model::readObj(const char* objFilename, bool forceGenerateNormals)
 	return m_valid;
 }
 
+void Model::generateSphere(u64 NumUSlices, u64 NumVSlices)
+{
+    m_boundsMin = vec3(-1.0f, -1.0f, -1.0f);
+    m_boundsMax = vec3(+1.0f, +1.0f, +1.0f);
+    m_dimensions = m_boundsMax - m_boundsMin;
+    m_center = vec3(0.0f, 0.0f, 0.0f);
+    m_valid = true;
+
+    std::vector<Vertex> sphereVerts;
+
+    // Add the vert at the top
+    Vertex vert;
+    vert.position = vec3(0.0f, 0.0f, 1.0f);
+    vert.normal = vec3(0.0f, 0.0f, 1.0f);
+
+    sphereVerts.push_back(vert);
+
+    // Add the rings
+    for(u64 v = 0; v < NumVSlices - 1; ++v)
+    {
+        for(u64 u = 0; u < NumUSlices; ++u)
+        {
+            const float theta = ((v + 1.0f) / NumVSlices) * pi;
+            const float phi = (float(u) / NumUSlices) * twoPi;
+
+            vec3 pos;
+            pos.x = std::sin(theta) * std::cos(phi);
+            pos.y = std::sin(theta) * std::sin(phi);
+            pos.z = std::cos(theta);
+            vert.position = pos;
+            vert.normal = pos;
+            sphereVerts.push_back(vert);
+        }
+    }
+
+    // Add the vert at the bottom
+    const u32 lastVertIdx = u32(sphereVerts.size());
+    vert.position = vec3(0.0f, 0.0f, -1.0f);
+    vert.normal = vec3(0.0f, 0.0f, -1.0f);
+    sphereVerts.push_back(vert);
+
+    // Add the top ring of triangles
+    std::vector<u32> sphereIndices;
+    for(u32 u = 0; u < NumUSlices; ++u)
+    {
+        sphereIndices.push_back(0);
+        sphereIndices.push_back(u + 1);
+
+        if(u < NumUSlices - 1)
+            sphereIndices.push_back(u + 2);
+        else
+            sphereIndices.push_back(1);
+    }
+
+    // Add the rest of the rings
+    u32 prevRowStart = 1;
+    u32 currRowStart = u32(NumUSlices + 1);
+    for(u32 v = 1; v < NumVSlices - 1; ++v)
+    {
+        for(u32 u = 0; u < NumUSlices; ++u)
+        {
+            u32 nextBottom = currRowStart + u + 1;
+            u32 nextTop = prevRowStart + u + 1;
+            if(u == NumUSlices - 1)
+            {
+                nextBottom = currRowStart;
+                nextTop = prevRowStart;
+            }
+
+            sphereIndices.push_back(prevRowStart + u);
+            sphereIndices.push_back(currRowStart + u);
+            sphereIndices.push_back(nextBottom);
+            sphereIndices.push_back(nextBottom);
+            sphereIndices.push_back(nextTop);
+            sphereIndices.push_back(prevRowStart + u);
+        }
+
+        prevRowStart = currRowStart;
+        currRowStart += u32(NumUSlices);
+    }
+
+    // Add the last ring at the bottom
+    const u32 lastRingStart = u32(lastVertIdx - NumUSlices);
+    for(u32 u = 0; u < NumUSlices; ++u)
+    {
+        sphereIndices.push_back(lastVertIdx);
+        sphereIndices.push_back(lastRingStart + u);
+
+        if(u < NumUSlices - 1)
+            sphereIndices.push_back(lastRingStart + u + 1);
+        else
+            sphereIndices.push_back(lastRingStart);
+    }
+
+    m_indexCount = (u32)sphereIndices.size();
+
+    glGenBuffers(1, &m_vertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sphereVerts.size() * sizeof(Vertex), sphereVerts.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &m_indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(u32), sphereIndices.data(), GL_STATIC_DRAW);
+}
+
 void Model::draw(
 	const Texture& irradianceTexture,
 	const CommonShaderUniforms& shaderUniforms,

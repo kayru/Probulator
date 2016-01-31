@@ -19,6 +19,7 @@ public:
 	};
 
 	bool readObj(const char* objFilename, bool forceGenerateNormals);
+    void generateSphere(u64 numUSlices = 256, u64 numVSlices = 192);
 
 	bool m_valid = false;
 	
