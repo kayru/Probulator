@@ -51,6 +51,9 @@ public:
 		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
+        m_sphereModel = std::unique_ptr<Model>(new Model(""));
+        m_sphereModel->generateSphere();
+
 		m_allExperimentNames = m_availableExperimentNames;
 
 		m_camera.m_position = vec3(0.0f, 0.0f, 0.0f);
@@ -180,6 +183,10 @@ public:
 				}
 				free(filename);
 			}
+
+            const char* renderTypeStrs[] = { "Render Object", "Render Sphere", "Render Basis Visualizer" };
+            int sz = int(sizeof(renderTypeStrs) / sizeof(const char*));
+            ImGui::Combo("Render Type", &m_renderType, renderTypeStrs, sz);
 		}
 
 		if (ImGui::CollapsingHeader("Camera", nullptr, true, false))
@@ -410,7 +417,12 @@ public:
 
 		m_blitter.drawLatLongEnvmap(*m_radianceTexture, m_shaderUniforms);
 
-		m_model->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
+        if (m_renderType == eRenderObject)
+		    m_model->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
+        if (m_renderType == eRenderSphere)
+            m_sphereModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
+        if (m_renderType == eRenderBasisVisualizer)
+            m_sphereModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
 
 		// draw UI on top
 
@@ -510,6 +522,13 @@ public:
 		m_mouseScrollDelta += vec2(x, y);
 	}
 
+    enum  {
+        eRenderObject,
+        eRenderSphere,
+        eRenderBasisVisualizer,
+    };
+    int m_renderType = eRenderObject;
+
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
@@ -519,7 +538,9 @@ public:
 	TexturePtr m_radianceTexture;
 	TexturePtr m_irradianceTexture;
 	Blitter m_blitter;
-	std::unique_ptr<Model> m_model;
+    std::unique_ptr<Model> m_model;
+    std::unique_ptr<Model> m_sphereModel;
+	std::unique_ptr<Model> m_basisModel;
 	CommonShaderUniforms m_shaderUniforms;
 
 	Camera m_camera;
