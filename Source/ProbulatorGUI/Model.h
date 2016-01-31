@@ -8,7 +8,7 @@ class Model : NonCopyable
 {
 public:
 
-	Model(const char* objFilename);
+	Model(const char* objFilename, const char* vertShader = nullptr, const char* pixelShader = nullptr);
 	~Model();
 
 	struct Vertex

@@ -116,7 +116,14 @@ ShaderProgramPtr createShaderProgram(
 	GLint linkStatus = 0;
 	glGetProgramiv(result->m_native, GL_LINK_STATUS, &linkStatus);
 
-	assert(linkStatus && "Could not link shader program"); // TODO: log linking errors
+    if (!linkStatus)
+    {
+        GLchar errorLog[1024] = { 0 };
+        glGetProgramInfoLog(result->m_native, 1024, NULL, errorLog);
+        
+        printf((std::string() + "error linking program: " + errorLog).c_str());
+    }
+    assert(linkStatus && "Could not link shader program"); // TODO: log linking errors
 
 	glGenVertexArrays(1, &result->m_vertexArray);
 	glBindVertexArray(result->m_vertexArray);

@@ -4,18 +4,24 @@
 #include <tiny_obj_loader.h>
 #include <vector>
 
-Model::Model(const char* objFilename)
+Model::Model(const char* objFilename, const char* vertShaderStr, const char* pixelShaderStr)
 {
-	auto vertexShader = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Model.vert");
-	auto pixelShader = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/Model.frag");
+    const char* pvName = vertShaderStr == nullptr ? "Data/Shaders/Model.vert" : vertShaderStr;
+    const char* pfName = pixelShaderStr == nullptr ? "Data/Shaders/Model.frag" : pixelShaderStr;
+	
+    auto vertexShader = createShaderFromFile(GL_VERTEX_SHADER, pvName);
+	auto pixelShader = createShaderFromFile(GL_FRAGMENT_SHADER, pfName);
 
 	m_shaderProgram = createShaderProgram(
 		*vertexShader,
 		*pixelShader,
 		m_vertexDeclaration);
 
-	const bool forceGenerateNormals = false;
-	readObj(objFilename, forceGenerateNormals);
+    if (std::string("") != objFilename) 
+    {
+        const bool forceGenerateNormals = false;
+        readObj(objFilename, forceGenerateNormals);
+    }
 }
 
 Model::~Model()

@@ -51,7 +51,7 @@ public:
 		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
-        m_sphereModel = std::unique_ptr<Model>(new Model(""));
+        m_sphereModel = std::unique_ptr<Model>(new Model("", "Data/Shaders/BasisVisualizer.vert"));
         m_sphereModel->generateSphere();
 
 		m_allExperimentNames = m_availableExperimentNames;
