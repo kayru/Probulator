@@ -51,8 +51,10 @@ public:
 		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
-        m_sphereModel = std::unique_ptr<Model>(new Model("", "Data/Shaders/BasisVisualizer.vert"));
+        m_sphereModel = std::unique_ptr<Model>(new Model(""));
         m_sphereModel->generateSphere();
+        m_basisModel = std::unique_ptr<Model>(new Model("", "Data/Shaders/BasisVisualizer.vert"));
+        m_basisModel->generateSphere();
 
 		m_allExperimentNames = m_availableExperimentNames;
 
@@ -422,7 +424,7 @@ public:
         if (m_renderType == eRenderSphere)
             m_sphereModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
         if (m_renderType == eRenderBasisVisualizer)
-            m_sphereModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
+            m_basisModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
 
 		// draw UI on top
 

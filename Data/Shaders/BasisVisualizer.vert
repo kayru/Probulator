@@ -15,14 +15,14 @@ out vec3 vWorldPosition;
 
 void main()
 {
-
-    vec2 texCoord = cartesianToLatLongTexcoord(Normal);
-    vec3 irradiance = texture(Texture0, TexCoord0).xyz;
-    float lum = 0.299 * irradiance.r + 0.587 * irradiance.g + 0.114 * irradiance.b;
-
-	vec3 worldPosition = vec3(uWorldMatrix * vec4(Position, 1)) * lum;
+	vec3 worldPosition = vec3(uWorldMatrix * vec4(Position, 1));
 	vec3 worldNormal = normalize(vec3(mat3(uWorldMatrix) * Normal));
-	gl_Position = uViewProjMatrix * vec4(worldPosition, 1);
+
+    vec2 texCoord = cartesianToLatLongTexcoord(worldNormal);
+    vec3 irradiance = texture(Texture0, texCoord).xyz;
+    float lumScale = 0.299 * irradiance.r + 0.587 * irradiance.g + 0.114 * irradiance.b;
+
+	gl_Position = uViewProjMatrix * vec4(worldPosition * lumScale, 1);
 
 	vWorldPosition = worldPosition;
 	vWorldNormal = worldNormal;
