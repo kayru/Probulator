@@ -13,6 +13,18 @@ struct CommonShaderUniforms
 	mat4 viewProjMatrix = mat4(1.0f);
 };
 
+class CommonShaderPrograms : NonCopyable
+{
+public:
+	CommonShaderPrograms();
+
+	ShaderProgramPtr blitTexture2D;
+	ShaderProgramPtr blitLatLongEnvmap;
+
+	ShaderProgramPtr modelIrradiance;
+	ShaderProgramPtr modelBasisVisualizer;
+};
+
 // Load shader from file with minimal preprocess step that handles include directives.
 // Included files must be in the same directory as source file.
 std::string preprocessShaderFromFile(const std::string& filename);

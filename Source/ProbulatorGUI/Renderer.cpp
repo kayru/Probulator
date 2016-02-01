@@ -99,7 +99,7 @@ ShaderPtr createShaderFromSource(u32 type, const char* source)
 ShaderProgramPtr createShaderProgram(
 	const Shader& vertexShader,
 	const Shader& pixelShader,
-	const VertexDeclaration& vertexDeclaration)
+	const VertexFormat& vertexFormat)
 {
 	assert(vertexShader.m_native);
 	assert(pixelShader.m_native);
@@ -107,7 +107,7 @@ ShaderProgramPtr createShaderProgram(
 	ShaderProgramPtr result = std::make_shared<ShaderProgram>();
 
 	result->m_native = glCreateProgram();
-	result->m_vertexDeclaration = vertexDeclaration;
+	result->m_vertexFormat = vertexFormat;
 
 	glAttachShader(result->m_native, vertexShader.m_native);
 	glAttachShader(result->m_native, pixelShader.m_native);
@@ -128,9 +128,9 @@ ShaderProgramPtr createShaderProgram(
 	glGenVertexArrays(1, &result->m_vertexArray);
 	glBindVertexArray(result->m_vertexArray);
 
-	for (u32 i = 0; i < vertexDeclaration.elementCount; ++i)
+	for (u32 i = 0; i < vertexFormat.elementCount; ++i)
 	{
-		const VertexElement& element = vertexDeclaration.elements[i];
+		const VertexElement& element = vertexFormat.elements[i];
 		const char* attributeName = toString(element.attribute);
 		GLint location = glGetAttribLocation(result->m_native, attributeName);
 		if (location != -1)
@@ -140,7 +140,7 @@ ShaderProgramPtr createShaderProgram(
 		result->m_vertexAttributeLocations[i] = location;
 	}
 
-	for (u32 i = vertexDeclaration.elementCount; i < VertexDeclaration::MaxElements; ++i)
+	for (u32 i = vertexFormat.elementCount; i < VertexFormat::MaxElements; ++i)
 	{
 		result->m_vertexAttributeLocations[i] = -1;
 	}
@@ -159,9 +159,9 @@ void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 v
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBindVertexArray(shaderProgram.m_vertexArray);
-	for (u32 i = 0; i < shaderProgram.m_vertexDeclaration.elementCount; ++i)
+	for (u32 i = 0; i < shaderProgram.m_vertexFormat.elementCount; ++i)
 	{
-		const VertexElement& element = shaderProgram.m_vertexDeclaration.elements[i];
+		const VertexElement& element = shaderProgram.m_vertexFormat.elements[i];
 		glVertexAttribPointer(
 			shaderProgram.m_vertexAttributeLocations[i],
 			element.componentCount,

@@ -32,15 +32,9 @@ public:
 	vec3 m_dimensions = vec3(0.0f);
 	vec3 m_center = vec3(0.0f);
 
-	VertexDeclaration m_vertexDeclaration = VertexDeclaration()
-		.add(VertexAttribute_Position, GL_FLOAT, false, 3, offsetof(Vertex, position))
-		.add(VertexAttribute_Normal, GL_FLOAT, false, 3, offsetof(Vertex, normal))
-		.add(VertexAttribute_TexCoord0, GL_FLOAT, false, 2, offsetof(Vertex, texCoord));
-
 	void draw(
-		const Texture& irradianceTexture,
+		const ShaderProgram& shaderProgram,
 		const CommonShaderUniforms& shaderUniforms,
+		const Texture& irradianceTexture,
 		const mat4& worldMatrix);
-
-	ShaderProgramPtr m_shaderProgram;
 };

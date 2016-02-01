@@ -2,23 +2,6 @@
 
 Blitter::Blitter()
 {
-	VertexDeclaration vertexDeclaration;
-	vertexDeclaration.add(VertexAttribute_Position, GL_FLOAT, GL_FALSE, 2, 0);
-
-	ShaderPtr vertexShader = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Blitter.vert");
-	ShaderPtr pixelShaderTexture2D = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/BlitterTexture2D.frag");
-	ShaderPtr pixelShaderLatLongEnvmap = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/BlitterLatLongEnvmap.frag");
-
-	m_programTexture2D = createShaderProgram(
-		*vertexShader,
-		*pixelShaderTexture2D,
-		vertexDeclaration);
-
-	m_programLatLongEnvmap = createShaderProgram(
-		*vertexShader,
-		*pixelShaderLatLongEnvmap,
-		vertexDeclaration);
-
 	const Vertex vertices[3] =
 	{
 		{-1.0f, -1.0f},
@@ -36,12 +19,12 @@ Blitter::~Blitter()
 	glDeleteBuffers(1, &m_vertexBuffer);
 }
 
-void Blitter::drawTexture2D(const Texture& texture)
+void Blitter::drawTexture(const ShaderProgram& shaderProgram, const Texture& texture)
 {
-	glUseProgram(m_programTexture2D->m_native);
+	glUseProgram(shaderProgram.m_native);
 	
-	setTexture(*m_programTexture2D, 0, texture);
-	setVertexBuffer(*m_programTexture2D, m_vertexBuffer, sizeof(Vertex));
+	setTexture(shaderProgram, 0, texture);
+	setVertexBuffer(shaderProgram, m_vertexBuffer, sizeof(Vertex));
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
@@ -50,15 +33,15 @@ void Blitter::drawTexture2D(const Texture& texture)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void Blitter::drawLatLongEnvmap(const Texture& texture, const CommonShaderUniforms& shaderUniforms)
+void Blitter::drawTexture(const ShaderProgram& shaderProgram, const CommonShaderUniforms& shaderUniforms, const Texture& texture)
 {
-	glUseProgram(m_programLatLongEnvmap->m_native);
+	glUseProgram(shaderProgram.m_native);
 
-	setTexture(*m_programLatLongEnvmap, 0, texture);
-	setVertexBuffer(*m_programLatLongEnvmap, m_vertexBuffer, sizeof(Vertex));
-	setUniformByName(*m_programLatLongEnvmap, "uViewMatrix", shaderUniforms.viewMatrix);
-	setUniformByName(*m_programLatLongEnvmap, "uProjMatrix", shaderUniforms.projMatrix);
-	setUniformByName(*m_programLatLongEnvmap, "uExposure", shaderUniforms.exposure);
+	setTexture(shaderProgram, 0, texture);
+	setVertexBuffer(shaderProgram, m_vertexBuffer, sizeof(Vertex));
+	setUniformByName(shaderProgram, "uViewMatrix", shaderUniforms.viewMatrix);
+	setUniformByName(shaderProgram, "uProjMatrix", shaderUniforms.projMatrix);
+	setUniformByName(shaderProgram, "uExposure", shaderUniforms.exposure);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);

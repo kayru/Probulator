@@ -13,8 +13,8 @@ public:
 	Blitter();
 	~Blitter();
 
-	void drawTexture2D(const Texture& texture);
-	void drawLatLongEnvmap(const Texture& texture, const CommonShaderUniforms& shaderUniforms);
+	void drawTexture(const ShaderProgram& shaderProgram, const Texture& texture);
+	void drawTexture(const ShaderProgram& shaderProgram, const CommonShaderUniforms& shaderUniforms, const Texture& texture);
 
 private:
 
@@ -24,7 +24,4 @@ private:
 	};
 
 	u32 m_vertexBuffer = 0;
-
-	ShaderProgramPtr m_programTexture2D;
-	ShaderProgramPtr m_programLatLongEnvmap;
 };

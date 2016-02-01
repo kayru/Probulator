@@ -6,17 +6,6 @@
 
 Model::Model(const char* objFilename, const char* vertShaderStr, const char* pixelShaderStr)
 {
-    const char* pvName = vertShaderStr == nullptr ? "Data/Shaders/Model.vert" : vertShaderStr;
-    const char* pfName = pixelShaderStr == nullptr ? "Data/Shaders/Model.frag" : pixelShaderStr;
-	
-    auto vertexShader = createShaderFromFile(GL_VERTEX_SHADER, pvName);
-	auto pixelShader = createShaderFromFile(GL_FRAGMENT_SHADER, pfName);
-
-	m_shaderProgram = createShaderProgram(
-		*vertexShader,
-		*pixelShader,
-		m_vertexDeclaration);
-
     if (std::string("") != objFilename) 
     {
         const bool forceGenerateNormals = false;
@@ -242,22 +231,23 @@ void Model::generateSphere(u64 NumUSlices, u64 NumVSlices)
 }
 
 void Model::draw(
-	const Texture& irradianceTexture,
+	const ShaderProgram& shaderProgram,
 	const CommonShaderUniforms& shaderUniforms,
+	const Texture& irradianceTexture,
 	const mat4& worldMatrix)
 {
 	if (!m_valid)
 		return;
 
-	glUseProgram(m_shaderProgram->m_native);
+	glUseProgram(shaderProgram.m_native);
 
-	setTexture(*m_shaderProgram, 0, irradianceTexture);
+	setTexture(shaderProgram, 0, irradianceTexture);
 
-	setUniformByName(*m_shaderProgram, "uWorldMatrix", worldMatrix);
-	setUniformByName(*m_shaderProgram, "uViewProjMatrix", shaderUniforms.viewProjMatrix);
-	setUniformByName(*m_shaderProgram, "uExposure", shaderUniforms.exposure);
+	setUniformByName(shaderProgram, "uWorldMatrix", worldMatrix);
+	setUniformByName(shaderProgram, "uViewProjMatrix", shaderUniforms.viewProjMatrix);
+	setUniformByName(shaderProgram, "uExposure", shaderUniforms.exposure);
 
-	setVertexBuffer(*m_shaderProgram, m_vertexBuffer, sizeof(Vertex));
+	setVertexBuffer(shaderProgram, m_vertexBuffer, sizeof(Vertex));
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
 

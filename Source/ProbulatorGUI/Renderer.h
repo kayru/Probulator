@@ -34,14 +34,14 @@ struct VertexElement
 	u32 offset = 0;
 };
 
-struct VertexDeclaration
+struct VertexFormat
 {
 	enum { MaxElements = 8 };
 
 	u32 elementCount = 0;
 	VertexElement elements[MaxElements];
 
-	VertexDeclaration& add(VertexAttribute attribute, u32 dataType, GLboolean normalized, u32 componentCount, u32 offset)
+	VertexFormat& add(VertexAttribute attribute, u32 dataType, GLboolean normalized, u32 componentCount, u32 offset)
 	{
 		assert(elementCount < MaxElements);
 		VertexElement& element = elements[elementCount];
@@ -113,8 +113,8 @@ public:
 
 	u32 m_native = 0;
 	u32 m_vertexArray = 0;
-	VertexDeclaration m_vertexDeclaration;
-	GLint m_vertexAttributeLocations[VertexDeclaration::MaxElements];
+	VertexFormat m_vertexFormat;
+	GLint m_vertexAttributeLocations[VertexFormat::MaxElements];
 	GLint m_textureLocations[MaxTextures];
 };
 
@@ -132,7 +132,7 @@ ShaderPtr createShaderFromSource(u32 type, const char* source);
 ShaderProgramPtr createShaderProgram(
 	const Shader& vertexShader,
 	const Shader& pixelShader,
-	const VertexDeclaration& vertexDeclaration);
+	const VertexFormat& vertexFormat);
 
 void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture& texture);
 void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 vertexStride);

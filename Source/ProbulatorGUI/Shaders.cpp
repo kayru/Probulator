@@ -1,4 +1,5 @@
 #include "Shaders.h"
+#include "Model.h"
 
 #include <sstream>
 #include <stdio.h>
@@ -74,4 +75,33 @@ ShaderPtr createShaderFromFile(u32 type, const char* filename)
 {
 	std::string shaderSource = preprocessShaderFromFile(filename);
 	return createShaderFromSource(type, shaderSource.c_str());
+}
+
+CommonShaderPrograms::CommonShaderPrograms()
+{
+	// Blitter
+
+	ShaderPtr vsBlitDefault = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Blitter.vert");
+	ShaderPtr psBlitTexture2D = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/BlitterTexture2D.frag");
+	ShaderPtr psBlitLatLongEnvmap = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/BlitterLatLongEnvmap.frag");
+
+	VertexFormat vfBlit;
+	vfBlit.add(VertexAttribute_Position, GL_FLOAT, GL_FALSE, 2, 0);
+
+	blitTexture2D = createShaderProgram(*vsBlitDefault, *psBlitTexture2D, vfBlit);
+	blitLatLongEnvmap = createShaderProgram(*vsBlitDefault, *psBlitLatLongEnvmap, vfBlit);
+
+	// Model
+
+	VertexFormat vfModel = VertexFormat()
+		.add(VertexAttribute_Position, GL_FLOAT, false, 3, offsetof(Model::Vertex, position))
+		.add(VertexAttribute_Normal, GL_FLOAT, false, 3, offsetof(Model::Vertex, normal))
+		.add(VertexAttribute_TexCoord0, GL_FLOAT, false, 2, offsetof(Model::Vertex, texCoord));
+
+	auto vsModelDefault = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Model.vert");
+	auto vsModelBasisVisualizer = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/BasisVisualizer.vert");
+	auto psModelLatLongIrradiance = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/Model.frag");
+
+	modelIrradiance = createShaderProgram(*vsModelDefault, *psModelLatLongIrradiance, vfModel);
+	modelBasisVisualizer = createShaderProgram(*vsModelBasisVisualizer, *psModelLatLongIrradiance, vfModel);
 }

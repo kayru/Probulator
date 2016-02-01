@@ -417,14 +417,20 @@ public:
 		glClearDepth(1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		m_blitter.drawLatLongEnvmap(*m_radianceTexture, m_shaderUniforms);
+		switch (m_renderType)
+		{
+		case eRenderObject:
+			m_model->draw(*m_shaderPrograms.modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			break;
+		case eRenderSphere:
+			m_sphereModel->draw(*m_shaderPrograms.modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			break;
+		case eRenderBasisVisualizer:
+			m_basisModel->draw(*m_shaderPrograms.modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			break;
+		}
 
-        if (m_renderType == eRenderObject)
-		    m_model->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
-        if (m_renderType == eRenderSphere)
-            m_sphereModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
-        if (m_renderType == eRenderBasisVisualizer)
-            m_basisModel->draw(*m_irradianceTexture, m_shaderUniforms, m_worldMatrix);
+		m_blitter.drawTexture(*m_shaderPrograms.blitLatLongEnvmap, m_shaderUniforms, *m_radianceTexture);
 
 		// draw UI on top
 
@@ -544,6 +550,7 @@ public:
     std::unique_ptr<Model> m_sphereModel;
 	std::unique_ptr<Model> m_basisModel;
 	CommonShaderUniforms m_shaderUniforms;
+	CommonShaderPrograms m_shaderPrograms;
 
 	Camera m_camera;
 	Camera m_smoothCamera;
