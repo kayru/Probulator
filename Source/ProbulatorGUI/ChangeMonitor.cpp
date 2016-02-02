@@ -1,6 +1,7 @@
 #include "ChangeMonitor.h"
 
 #include <string>
+#include <unordered_map>
 
 #ifdef WIN32
 
@@ -12,6 +13,7 @@ class Win32ChangeMonitor : public ChangeMonitor
 public:
 
 	Win32ChangeMonitor(const char* path)
+		: m_path(path)
 	{
 		m_directoryHandle = CreateFile(
 			path,
@@ -30,6 +32,38 @@ public:
 	{
 		CloseHandle(m_directoryHandle);
 		CloseHandle(m_overlapped.hEvent);
+	}
+
+	std::string getFilename(const PFILE_NOTIFY_INFORMATION& notification)
+	{
+		int filenameLength = WideCharToMultiByte(CP_UTF8, 0, notification->FileName, notification->FileNameLength / sizeof(wchar_t), 
+			nullptr, 0, nullptr, nullptr);
+
+		std::string filename(filenameLength, 0);
+
+		WideCharToMultiByte(CP_UTF8, 0, notification->FileName, notification->FileNameLength / sizeof(wchar_t), 
+			&filename[0], filenameLength, nullptr, nullptr);
+
+		return filename;
+	}
+
+	u64 getFileTimeStamp(const std::string& path)
+	{
+		u64 result = 0;
+
+		HANDLE h = CreateFile(path.c_str(), FILE_READ_ATTRIBUTES, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (h == INVALID_HANDLE_VALUE)
+		{
+			return result;
+		}
+
+		FILETIME timeStamp = {};
+		GetFileTime(h, nullptr, nullptr, &timeStamp);
+		result = (u64(timeStamp.dwHighDateTime) << 32) | timeStamp.dwLowDateTime;
+
+		CloseHandle(h);
+
+		return result;
 	}
 
 	virtual bool update() override
@@ -51,7 +85,13 @@ public:
 				{
 					if (notification->Action == FILE_ACTION_MODIFIED)
 					{
-						modified = true;
+						std::string filename = getFilename(notification);
+
+						u64 oldTimeStamp = m_timeStamps[filename];
+						u64 newTimeStamp = getFileTimeStamp(m_path + "/" + filename);
+
+						modified = modified || newTimeStamp > oldTimeStamp;
+						m_timeStamps[filename] = newTimeStamp;
 					}
 					notification = notification->NextEntryOffset ? (PFILE_NOTIFY_INFORMATION)(m_buffer + notification->NextEntryOffset) : nullptr;
 				}
@@ -83,10 +123,13 @@ private:
 			nullptr);
 	}
 
+	std::string m_path;
 	HANDLE m_directoryHandle = nullptr;
 	bool m_recursive = false;
 	OVERLAPPED m_overlapped;
 	char m_buffer[65536];
+
+	std::unordered_map<std::string, u64> m_timeStamps;
 };
 
 ChangeMonitor* createChangeMonitor(const char* path)
