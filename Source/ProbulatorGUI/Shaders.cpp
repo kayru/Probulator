@@ -41,15 +41,17 @@ static std::string stringFromFile(const std::string& filename)
 	return res;
 }
 
-std::string preprocessShaderFromFile(const std::string& filename)
+static std::string preprocessShaderFromFile(const std::string& filename)
 {
 	std::string shaderSource = stringFromFile(filename);
 	std::string shaderPath = pathFromFilename(filename);
 
-	std::string result;
+	std::stringstream result;
 	std::istringstream stream(shaderSource);
 
 	std::string line;
+
+	u32 currentLine = 1;
 	while (std::getline(stream, line))
 	{
 		if (line.find("#include") == 0)
@@ -59,16 +61,20 @@ std::string preprocessShaderFromFile(const std::string& filename)
 			if (p0 != p1 && p0 != std::string::npos && p1 != std::string::npos)
 			{
 				std::string includeFilename = line.substr(p0 + 1, p1 - p0 - 1);
-				result += preprocessShaderFromFile(shaderPath + includeFilename) + "\n";
+				result << preprocessShaderFromFile(shaderPath + includeFilename) << "\n";
+				++currentLine;
+				result << "#line " << currentLine << "\n";
 			}
 		}
 		else
 		{
-			result += line + "\n";
+			result << line << "\n";
 		}
+
+		++currentLine;
 	}
 
-	return result;
+	return result.str();
 }
 
 ShaderPtr createShaderFromFile(u32 type, const char* filename)
