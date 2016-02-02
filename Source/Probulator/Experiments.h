@@ -106,7 +106,7 @@ public:
 
 			m_directionImage.forPixels2D([&](vec3& direction, ivec2 pixelPos)
 			{
-				vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(m_outputSize - ivec2(1));
+				vec2 uv = (vec2(pixelPos) + vec2(0.5f)) / vec2(m_outputSize);
 				direction = latLongTexcoordToCartesian(uv);
 			});
 

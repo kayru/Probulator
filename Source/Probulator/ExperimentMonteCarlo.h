@@ -10,17 +10,11 @@ public:
 
     void run(SharedData& data) override
     {
-        const ivec2 imageSize = data.m_outputSize;
-        const ivec2 imageSizeMinusOne = imageSize - 1;
-        const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
-
         m_radianceImage = data.m_radianceImage;
 
         m_irradianceImage = Image(data.m_outputSize);
-        m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
+        data.m_directionImage.parallelForPixels2D([&](const vec3& direction, ivec2 pixelPos)
         {
-            vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * imageSizeMinusOneRcp;
-            vec3 direction = latLongTexcoordToCartesian(uv);
             mat3 basis = makeOrthogonalBasis(direction);
             vec3 accum = vec3(0.0f);
             for (u32 sampleIt = 0; sampleIt < m_hemisphereSampleCount; ++sampleIt)
@@ -33,7 +27,7 @@ public:
 
             accum /= m_hemisphereSampleCount;
 
-            pixel = vec4(accum, 1.0f);
+			m_irradianceImage.at(pixelPos) = vec4(accum, 1.0f);
         });
     }
 
@@ -55,8 +49,6 @@ public:
     void run(SharedData& data) override
     {
         const ivec2 imageSize = data.m_outputSize;
-        const ivec2 imageSizeMinusOne = imageSize - 1;
-        const vec2 imageSizeMinusOneRcp = vec2(1.0) / vec2(imageSizeMinusOne);
 
         m_radianceImage = data.m_radianceImage;
 
@@ -78,14 +70,12 @@ public:
         DiscreteDistribution<float> discreteDistribution(texelWeights.data(), texelWeights.size(), weightSum);
 
         m_irradianceImage = Image(data.m_outputSize);
-        m_irradianceImage.parallelForPixels2D([&](vec4& pixel, ivec2 pixelPos)
+        data.m_directionImage.parallelForPixels2D([&](const vec3& normal, ivec2 pixelPos)
         {
             u32 pixelIndex = pixelPos.x + pixelPos.y * m_irradianceImage.getWidth();
             u32 seed = m_jitterEnabled ? pixelIndex : 0;
             std::mt19937 rng(seed);
 
-            vec2 uv = (vec2(pixelPos) + vec2(0.5f)) * imageSizeMinusOneRcp;
-            vec3 normal = latLongTexcoordToCartesian(uv);
             vec3 accum = vec3(0.0f);
             for (u32 sampleIt = 0; sampleIt < m_sampleCount; ++sampleIt)
             {
@@ -100,7 +90,7 @@ public:
 
             accum /= m_sampleCount * pi;
 
-            pixel = vec4(accum, 1.0f);
+            m_irradianceImage.at(pixelPos) = vec4(accum, 1.0f);
         });
 
         data.GenerateIrradianceSamples(m_irradianceImage);
