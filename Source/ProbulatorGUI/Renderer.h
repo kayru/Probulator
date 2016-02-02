@@ -138,4 +138,5 @@ void setTexture(const ShaderProgram& shaderProgram, u32 slotIndex, const Texture
 void setVertexBuffer(const ShaderProgram& shaderProgram, u32 vertexBuffer, u32 vertexStride);
 
 void setUniformByName(const ShaderProgram& shaderProgram, const char* name, float value);
+void setUniformByName(const ShaderProgram& shaderProgram, const char* name, const vec2& value);
 void setUniformByName(const ShaderProgram& shaderProgram, const char* name, const mat4& value);

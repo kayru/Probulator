@@ -1,6 +1,5 @@
 #include "Common.glsl"
 
-uniform float uExposure;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjMatrix;
 uniform sampler2D Texture0;
@@ -19,5 +18,6 @@ void main()
 	vec2 texCoord = cartesianToLatLongTexcoord(view);
 	vec4 color = texture(Texture0, texCoord);
 	color.rgb = tonemapLinear(color.rgb, uExposure);
+	color.rgb = applyDithering(color.rgb, gl_FragCoord.xy / uResolution, uElapsedTime);
 	Target = color;
 }

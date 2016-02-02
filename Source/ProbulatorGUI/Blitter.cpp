@@ -39,9 +39,8 @@ void Blitter::drawTexture(const ShaderProgram& shaderProgram, const CommonShader
 
 	setTexture(shaderProgram, 0, texture);
 	setVertexBuffer(shaderProgram, m_vertexBuffer, sizeof(Vertex));
-	setUniformByName(shaderProgram, "uViewMatrix", shaderUniforms.viewMatrix);
-	setUniformByName(shaderProgram, "uProjMatrix", shaderUniforms.projMatrix);
-	setUniformByName(shaderProgram, "uExposure", shaderUniforms.exposure);
+
+	setCommonUniforms(shaderProgram, shaderUniforms);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);

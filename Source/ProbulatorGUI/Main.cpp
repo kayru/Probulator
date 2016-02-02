@@ -402,8 +402,6 @@ public:
 
 	void update()
 	{
-		m_shaderUniforms.elapsedTime = (float)getElapsedTime(m_timeStart);
-
 		if (m_shaderChangeMonitor->update())
 		{
 			printf("Reloading shaders\n");
@@ -434,11 +432,16 @@ public:
 		m_camera.m_aspect = (float)m_sceneViewport.x / (float)m_sceneViewport.y;
 		m_smoothCamera.m_aspect = m_camera.m_aspect;
 
+		m_shaderUniforms.resolution.x = (float)m_windowSize.x;
+		m_shaderUniforms.resolution.y = (float)m_windowSize.y;
+
 		m_shaderUniforms.viewMatrix = m_smoothCamera.getViewMatrix();
 		m_shaderUniforms.projMatrix = m_smoothCamera.getProjectionMatrix();
 
 		m_shaderUniforms.viewProjMatrix = m_shaderUniforms.projMatrix * m_shaderUniforms.viewMatrix;
 		
+		m_shaderUniforms.elapsedTime = (float)getElapsedTime(m_timeStart);
+
 		// draw scene
 
 		glViewport(0, 0, m_sceneViewport.x, m_sceneViewport.y);

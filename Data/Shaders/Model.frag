@@ -1,8 +1,6 @@
 #include "Common.glsl"
 
 uniform sampler2D Texture0;
-uniform float uExposure;
-uniform float uElapsedTime;
 
 in vec2 vTexCoord0;
 in vec3 vWorldNormal;
@@ -17,6 +15,8 @@ void main()
 	vec2 texCoord = cartesianToLatLongTexcoord(normal);
 	vec3 irradiance = texture(Texture0, texCoord).xyz;
 	vec3 color = albedo * irradiance;
+
 	color = tonemapLinear(color, uExposure);
+	color = applyDithering(color, gl_FragCoord.xy / uResolution, uElapsedTime);
 	Target = vec4(color, 1.0);
 }

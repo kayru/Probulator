@@ -83,6 +83,16 @@ ShaderPtr createShaderFromFile(u32 type, const char* filename)
 	return createShaderFromSource(type, shaderSource.c_str());
 }
 
+void setCommonUniforms(const ShaderProgram& shaderProgram, const CommonShaderUniforms& uniforms)
+{
+	setUniformByName(shaderProgram, "uElapsedTime", uniforms.elapsedTime);
+	setUniformByName(shaderProgram, "uExposure", uniforms.exposure);
+	setUniformByName(shaderProgram, "uProjMatrix", uniforms.projMatrix);
+	setUniformByName(shaderProgram, "uResolution", uniforms.resolution);
+	setUniformByName(shaderProgram, "uViewMatrix", uniforms.viewMatrix);
+	setUniformByName(shaderProgram, "uViewProjMatrix", uniforms.viewProjMatrix);
+}
+
 CommonShaderPrograms::CommonShaderPrograms()
 {
 	// Blitter
