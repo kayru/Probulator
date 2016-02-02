@@ -4,13 +4,15 @@
 #include <tiny_obj_loader.h>
 #include <vector>
 
-Model::Model(const char* objFilename, const char* vertShaderStr, const char* pixelShaderStr)
+Model::Model(const char* objFilename)
 {
-    if (std::string("") != objFilename) 
-    {
-        const bool forceGenerateNormals = false;
-        readObj(objFilename, forceGenerateNormals);
-    }
+    const bool forceGenerateNormals = false;
+    readObj(objFilename, forceGenerateNormals);
+}
+
+Model::Model(ProceduralSphere& sphere)
+{
+	generateSphere(sphere.numUSlices, sphere.numVSlices);
 }
 
 Model::~Model()

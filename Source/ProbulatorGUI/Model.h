@@ -8,7 +8,15 @@ class Model : NonCopyable
 {
 public:
 
-	Model(const char* objFilename, const char* vertShader = nullptr, const char* pixelShader = nullptr);
+	struct ProceduralSphere
+	{
+		u64 numUSlices = 256;
+		u64 numVSlices = 256;
+	};
+
+
+	Model(const char* objFilename);
+	Model(ProceduralSphere& sphere);
 	~Model();
 
 	struct Vertex

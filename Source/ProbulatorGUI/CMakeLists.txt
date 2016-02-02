@@ -5,6 +5,8 @@ add_executable(ProbulatorGUI
 	Blitter.h
 	Camera.cpp
 	Camera.h
+	ChangeMonitor.cpp
+	ChangeMonitor.h
 	Common.h
 	Main.cpp
 	Model.cpp

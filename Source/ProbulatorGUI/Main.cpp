@@ -3,6 +3,7 @@
 #include "Blitter.h"
 #include "Model.h"
 #include "Camera.h"
+#include "ChangeMonitor.h"
 
 #include <Probulator/Math.h>
 #include <Probulator/Image.h>
@@ -40,6 +41,8 @@ public:
 
 	ProbulatorGui()
 	{
+		m_shaderChangeMonitor = std::unique_ptr<ChangeMonitor>(createChangeMonitor("Data/Shaders"));
+
 		addAllExperiments(m_experimentList);
 		for (auto& e : m_experimentList)
 		{
@@ -51,10 +54,8 @@ public:
 		memset(m_keyDown, 0, sizeof(m_keyDown));
 		loadResources();
 
-        m_sphereModel = std::unique_ptr<Model>(new Model(""));
-        m_sphereModel->generateSphere();
-        m_basisModel = std::unique_ptr<Model>(new Model("", "Data/Shaders/BasisVisualizer.vert"));
-        m_basisModel->generateSphere();
+		m_sphereModel = std::unique_ptr<Model>(new Model(Model::ProceduralSphere()));
+		m_basisModel = std::unique_ptr<Model>(new Model(Model::ProceduralSphere()));
 
 		m_allExperimentNames = m_availableExperimentNames;
 
@@ -385,6 +386,12 @@ public:
 
 	void update()
 	{
+		if (m_shaderChangeMonitor->update())
+		{
+			printf("Reloading shaders\n");
+			loadShaders();
+		}
+
 		updateObject();
 		updateCamera();
 		updateImGui();
@@ -395,6 +402,11 @@ public:
 
 	void render()
 	{
+		if (!m_shaderPrograms || !m_shaderPrograms->validate())
+		{
+			return;
+		}
+
 		// setup constants
 
 		m_sceneViewport.x = m_windowSize.x - m_menuWidth;
@@ -420,17 +432,17 @@ public:
 		switch (m_renderType)
 		{
 		case eRenderObject:
-			m_model->draw(*m_shaderPrograms.modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_model->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		case eRenderSphere:
-			m_sphereModel->draw(*m_shaderPrograms.modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_sphereModel->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		case eRenderBasisVisualizer:
-			m_basisModel->draw(*m_shaderPrograms.modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		}
 
-		m_blitter.drawTexture(*m_shaderPrograms.blitLatLongEnvmap, m_shaderUniforms, *m_radianceTexture);
+		m_blitter.drawTexture(*m_shaderPrograms->blitLatLongEnvmap, m_shaderUniforms, *m_radianceTexture);
 
 		// draw UI on top
 
@@ -444,8 +456,18 @@ public:
 
 	void loadResources()
 	{
+		loadShaders();
 		loadEnvmap(m_envmapFilename.c_str());
 		loadModel(m_objectFilename.c_str());
+	}
+
+	void loadShaders()
+	{
+		auto pendingShaderPrograms = std::unique_ptr<CommonShaderPrograms>(new CommonShaderPrograms());
+		if (pendingShaderPrograms->validate())
+		{
+			std::swap(m_shaderPrograms, pendingShaderPrograms);
+		}
 	}
 
 	void loadModel(const char* filename)
@@ -537,6 +559,8 @@ public:
     };
     int m_renderType = eRenderObject;
 
+	std::unique_ptr<ChangeMonitor> m_shaderChangeMonitor;
+
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
@@ -550,7 +574,7 @@ public:
     std::unique_ptr<Model> m_sphereModel;
 	std::unique_ptr<Model> m_basisModel;
 	CommonShaderUniforms m_shaderUniforms;
-	CommonShaderPrograms m_shaderPrograms;
+	std::unique_ptr<CommonShaderPrograms> m_shaderPrograms;
 
 	Camera m_camera;
 	Camera m_smoothCamera;

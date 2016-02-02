@@ -90,7 +90,6 @@ ShaderPtr createShaderFromSource(u32 type, const char* source)
 		shaderInfoLog.resize(infoLogLength);
 		glGetShaderInfoLog(result->m_native, infoLogLength, nullptr, &shaderInfoLog[0]);
 		printf("ERROR: Could not compile shader.\n%s\n", shaderInfoLog.c_str());
-		assert(compileStatus && "Could not compile shader");
 	}
 	return result;
 }
@@ -123,7 +122,6 @@ ShaderProgramPtr createShaderProgram(
         
         printf((std::string() + "error linking program: " + errorLog).c_str());
     }
-    assert(linkStatus && "Could not link shader program"); // TODO: log linking errors
 
 	glGenVertexArrays(1, &result->m_vertexArray);
 	glBindVertexArray(result->m_vertexArray);

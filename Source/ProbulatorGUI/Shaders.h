@@ -23,6 +23,8 @@ public:
 
 	ShaderProgramPtr modelIrradiance;
 	ShaderProgramPtr modelBasisVisualizer;
+
+	bool validate() const;
 };
 
 // Load shader from file with minimal preprocess step that handles include directives.

@@ -105,3 +105,11 @@ CommonShaderPrograms::CommonShaderPrograms()
 	modelIrradiance = createShaderProgram(*vsModelDefault, *psModelLatLongIrradiance, vfModel);
 	modelBasisVisualizer = createShaderProgram(*vsModelBasisVisualizer, *psModelLatLongIrradiance, vfModel);
 }
+
+bool CommonShaderPrograms::validate() const
+{
+	return blitTexture2D
+		&& blitLatLongEnvmap
+		&& modelIrradiance
+		&& modelBasisVisualizer;
+}
