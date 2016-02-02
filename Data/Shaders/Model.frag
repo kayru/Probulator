@@ -2,6 +2,7 @@
 
 uniform sampler2D Texture0;
 uniform float uExposure;
+uniform float uElapsedTime;
 
 in vec2 vTexCoord0;
 in vec3 vWorldNormal;

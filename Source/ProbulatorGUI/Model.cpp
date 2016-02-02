@@ -248,6 +248,7 @@ void Model::draw(
 	setUniformByName(shaderProgram, "uWorldMatrix", worldMatrix);
 	setUniformByName(shaderProgram, "uViewProjMatrix", shaderUniforms.viewProjMatrix);
 	setUniformByName(shaderProgram, "uExposure", shaderUniforms.exposure);
+	setUniformByName(shaderProgram, "uElapsedTime", shaderUniforms.elapsedTime);
 
 	setVertexBuffer(shaderProgram, m_vertexBuffer, sizeof(Vertex));
 

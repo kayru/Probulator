@@ -7,6 +7,7 @@
 
 struct CommonShaderUniforms
 {
+	float elapsedTime = 0.0f;
 	float exposure = 1.0f;
 	mat4 viewMatrix = mat4(1.0f);
 	mat4 projMatrix = mat4(1.0f);

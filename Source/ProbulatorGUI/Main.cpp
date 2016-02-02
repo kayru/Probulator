@@ -20,6 +20,20 @@
 
 #include <stdio.h>
 #include <memory>
+#include <chrono>
+
+typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
+
+inline TimePoint getCurrentTime()
+{
+	return std::chrono::high_resolution_clock::now();
+}
+
+inline double getElapsedTime(const TimePoint& timeStart)
+{
+	return std::chrono::duration_cast<std::chrono::duration<double>>(getCurrentTime() - timeStart).count();
+}
+
 
 struct ExperimentResults
 {
@@ -41,6 +55,8 @@ public:
 
 	ProbulatorGui()
 	{
+		m_timeStart = getCurrentTime();
+
 		m_shaderChangeMonitor = std::unique_ptr<ChangeMonitor>(createChangeMonitor("Data/Shaders"));
 
 		addAllExperiments(m_experimentList);
@@ -386,6 +402,8 @@ public:
 
 	void update()
 	{
+		m_shaderUniforms.elapsedTime = (float)getElapsedTime(m_timeStart);
+
 		if (m_shaderChangeMonitor->update())
 		{
 			printf("Reloading shaders\n");
@@ -605,6 +623,9 @@ public:
 	vec2 m_oldMousePosition = vec2(0.0f);
 	vec2 m_mouseScrollDelta = vec2(0.0f);
 	bool m_keyDown[GLFW_KEY_LAST+1];
+
+
+	TimePoint m_timeStart;
 };
 
 static void cbWindowSize(GLFWwindow* window, int w, int h)
