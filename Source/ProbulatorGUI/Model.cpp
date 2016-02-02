@@ -10,7 +10,7 @@ Model::Model(const char* objFilename)
     readObj(objFilename, forceGenerateNormals);
 }
 
-Model::Model(ProceduralSphere& sphere)
+Model::Model(const ProceduralSphere& sphere)
 {
 	generateSphere(sphere.numUSlices, sphere.numVSlices);
 }

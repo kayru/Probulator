@@ -16,7 +16,7 @@ public:
 
 
 	Model(const char* objFilename);
-	Model(ProceduralSphere& sphere);
+	Model(const ProceduralSphere& sphere);
 	~Model();
 
 	struct Vertex
