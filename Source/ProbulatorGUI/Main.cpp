@@ -402,8 +402,9 @@ public:
 
 	void render()
 	{
-		if (!m_shaderPrograms || !m_shaderPrograms->validate())
+		if (!m_shaderPrograms)
 		{
+			// TODO: report shader compile errors here using IMGUI
 			return;
 		}
 
@@ -463,10 +464,13 @@ public:
 
 	void loadShaders()
 	{
-		auto pendingShaderPrograms = std::unique_ptr<CommonShaderPrograms>(new CommonShaderPrograms());
-		if (pendingShaderPrograms->validate())
+		try
 		{
-			std::swap(m_shaderPrograms, pendingShaderPrograms);
+			m_shaderPrograms = std::unique_ptr<CommonShaderPrograms>(new CommonShaderPrograms());
+		}
+		catch (std::exception& e)
+		{
+			printf("Exception: %s\n", e.what());
 		}
 	}
 
