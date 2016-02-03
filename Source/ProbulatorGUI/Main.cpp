@@ -37,15 +37,15 @@ inline double getElapsedTime(const TimePoint& timeStart)
 
 struct ExperimentResults
 {
-    ExperimentResults(const std::string& l = "", ImTextureID r = 0, ImTextureID ir = 0, ImTextureID s = 0)
-        : m_label(l), m_radianceImage(r), m_irradianceImage(ir), m_sampeImage(s), m_shouldRender(false)
-        { }
+	ExperimentResults(const std::string& l = "", ImTextureID r = 0, ImTextureID ir = 0, ImTextureID s = 0)
+		: m_label(l), m_radianceImage(r), m_irradianceImage(ir), m_sampeImage(s), m_shouldRender(false)
+		{ }
 
-    std::string m_label;
-    ImTextureID m_radianceImage;
-    ImTextureID m_irradianceImage;
-    ImTextureID m_sampeImage;
-    bool m_shouldRender;
+	std::string m_label;
+	ImTextureID m_radianceImage;
+	ImTextureID m_irradianceImage;
+	ImTextureID m_sampeImage;
+	bool m_shouldRender;
 };
 typedef std::vector<std::unique_ptr<ExperimentResults>> ExperimentResultsList;
 
@@ -90,11 +90,11 @@ public:
 
 	}
 
-    static bool getComboItem(void* data, int idx, const char** outText)
-    {
-        *outText = (*((std::vector<std::string>*)data))[idx].c_str();
-        return true;
-    }
+	static bool getComboItem(void* data, int idx, const char** outText)
+	{
+		*outText = (*((std::vector<std::string>*)data))[idx].c_str();
+		return true;
+	}
 
 	ImTextureID getImTextureID(TexturePtr texture)
 	{
@@ -203,9 +203,9 @@ public:
 				free(filename);
 			}
 
-            const char* renderTypeStrs[] = { "Render Object", "Render Sphere", "Render Basis Visualizer" };
-            int sz = int(sizeof(renderTypeStrs) / sizeof(const char*));
-            ImGui::Combo("Render Type", &m_renderType, renderTypeStrs, sz);
+			const char* renderTypeStrs[] = { "Render Object", "Render Sphere", "Render Basis Visualizer" };
+			int sz = int(sizeof(renderTypeStrs) / sizeof(const char*));
+			ImGui::Combo("Render Type", &m_renderType, renderTypeStrs, sz);
 		}
 
 		if (ImGui::CollapsingHeader("Camera", nullptr, true, false))
@@ -224,106 +224,106 @@ public:
 			ImGui::SliderFloat("Orbit radius", &m_cameraController.m_orbitRadius, 0.0f, 10.0f);
 		}
 
-        if (ImGui::CollapsingHeader("Basis Experiments", nullptr, true, true))
-        {
-            
+		if (ImGui::CollapsingHeader("Basis Experiments", nullptr, true, true))
+		{
+			
 
-            static int currItem = 0;
-            if (m_availableExperimentNames.size())
-            {
-                ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&m_availableExperimentNames, 
-                                              (int)m_availableExperimentNames.size());
-                ImGui::SameLine();
-                if (ImGui::Button("+"))
-                {
-                    ExperimentResults* e = new ExperimentResults(m_availableExperimentNames[currItem], 
-                                                                 getImTextureID(m_irradianceTexture), 
-                                                                 getImTextureID(m_irradianceTexture),
-                                                                 getImTextureID(m_irradianceTexture));
-                    m_experimentResultsList.push_back(std::unique_ptr<ExperimentResults>(e));
+			static int currItem = 0;
+			if (m_availableExperimentNames.size())
+			{
+				ImGui::Combo("Add Experiment", &currItem, getComboItem, (void*)&m_availableExperimentNames, 
+											  (int)m_availableExperimentNames.size());
+				ImGui::SameLine();
+				if (ImGui::Button("+"))
+				{
+					ExperimentResults* e = new ExperimentResults(m_availableExperimentNames[currItem], 
+																 getImTextureID(m_irradianceTexture), 
+																 getImTextureID(m_irradianceTexture),
+																 getImTextureID(m_irradianceTexture));
+					m_experimentResultsList.push_back(std::unique_ptr<ExperimentResults>(e));
 
-                    m_availableExperimentNames.erase(m_availableExperimentNames.begin() + currItem);
-                    currItem = 0;
-                }
-            }
+					m_availableExperimentNames.erase(m_availableExperimentNames.begin() + currItem);
+					currItem = 0;
+				}
+			}
 
-            // render each experiment
+			// render each experiment
 
-            ImGui::Separator();
-            ImGui::Columns(4, "Experiment Results", true);
-            ImGui::Text("Mode");
-            ImGui::NextColumn();
-            ImGui::Text("Radiance");
-            ImGui::NextColumn();
-            ImGui::Text("Irradiance");
-            ImGui::NextColumn();
-            ImGui::Text("Irradiance Error");
-            ImGui::Text("(sMAPE)");
-            ImGui::Separator();
-            ImGui::NextColumn();
+			ImGui::Separator();
+			ImGui::Columns(4, "Experiment Results", true);
+			ImGui::Text("Mode");
+			ImGui::NextColumn();
+			ImGui::Text("Radiance");
+			ImGui::NextColumn();
+			ImGui::Text("Irradiance");
+			ImGui::NextColumn();
+			ImGui::Text("Irradiance Error");
+			ImGui::Text("(sMAPE)");
+			ImGui::Separator();
+			ImGui::NextColumn();
 
-            std::string deleteMe;
-            int guiIdx = 0;
-            for (const auto& e : m_experimentResultsList)
-            {
-                ImGui::BeginGroup();
-                {
-                    std::string label = e->m_label;
-                    std::string::size_type pos = label.find_first_of('[');
-                    if (pos != std::string::npos)
-                    {
-                        std::string mainName = std::string(&label[0], &label[pos]);
-                        std::string subName  = std::string(&label[pos], &label[label.size()]);
-                        ImGui::Text(mainName.c_str());
-                        ImGui::Text(subName.c_str());
-                    }
-                    else
-                        ImGui::Text(label.c_str());
-                }
-                ImGui::Spacing();
-                if (ImGui::Button((std::string("Delete##") + std::string(1, char(guiIdx++))).c_str()))
-                    deleteMe = e->m_label.c_str();
-                if (ImGui::Checkbox(std::string("Render##" + std::string(1, char(guiIdx++))).c_str(), &e->m_shouldRender))
-                {
-                    if (e->m_shouldRender)
-                    {   
-                        // turn off all other experiments
-                        for (const auto& o : m_experimentResultsList)
-                        {
-                            if (o != e)
-                                o->m_shouldRender = false;
-                        }
-                    }
-                }
-                ImGui::EndGroup();
-                ImGui::NextColumn();
-                ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
-                ImGui::NextColumn();
-                ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
-                ImGui::NextColumn();
-                ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
-                ImGui::Separator();
-                ImGui::NextColumn();
-            }
+			std::string deleteMe;
+			int guiIdx = 0;
+			for (const auto& e : m_experimentResultsList)
+			{
+				ImGui::BeginGroup();
+				{
+					std::string label = e->m_label;
+					std::string::size_type pos = label.find_first_of('[');
+					if (pos != std::string::npos)
+					{
+						std::string mainName = std::string(&label[0], &label[pos]);
+						std::string subName  = std::string(&label[pos], &label[label.size()]);
+						ImGui::Text(mainName.c_str());
+						ImGui::Text(subName.c_str());
+					}
+					else
+						ImGui::Text(label.c_str());
+				}
+				ImGui::Spacing();
+				if (ImGui::Button((std::string("Delete##") + std::string(1, char(guiIdx++))).c_str()))
+					deleteMe = e->m_label.c_str();
+				if (ImGui::Checkbox(std::string("Render##" + std::string(1, char(guiIdx++))).c_str(), &e->m_shouldRender))
+				{
+					if (e->m_shouldRender)
+					{   
+						// turn off all other experiments
+						for (const auto& o : m_experimentResultsList)
+						{
+							if (o != e)
+								o->m_shouldRender = false;
+						}
+					}
+				}
+				ImGui::EndGroup();
+				ImGui::NextColumn();
+				ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+				ImGui::NextColumn();
+				ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+				ImGui::NextColumn();
+				ImGui::Image(getImTextureID(m_radianceTexture), vec2(m_menuWidth, m_menuWidth / 2) / 4.0f);
+				ImGui::Separator();
+				ImGui::NextColumn();
+			}
 
-            if (deleteMe != "")
-            {
-                // iterate through experiment results and remove
-                auto i = std::begin(m_experimentResultsList);
-                while (i != std::end(m_experimentResultsList))
-                {
-                    if ((*i)->m_label == deleteMe)
-                        i = m_experimentResultsList.erase(i);
-                    else
-                        ++i;
-                }
+			if (deleteMe != "")
+			{
+				// iterate through experiment results and remove
+				auto i = std::begin(m_experimentResultsList);
+				while (i != std::end(m_experimentResultsList))
+				{
+					if ((*i)->m_label == deleteMe)
+						i = m_experimentResultsList.erase(i);
+					else
+						++i;
+				}
 
-                // add basis back to drop down list
-                m_availableExperimentNames.push_back(deleteMe);
-            }
+				// add basis back to drop down list
+				m_availableExperimentNames.push_back(deleteMe);
+			}
 
-            ImGui::Columns(1);
-        }
+			ImGui::Columns(1);
+		}
 
 		ImGui::End();
 	}
@@ -453,13 +453,13 @@ public:
 
 		switch (m_renderType)
 		{
-		case eRenderObject:
+		case RenderObject:
 			m_model->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
-		case eRenderSphere:
+		case RenderSphere:
 			m_sphereModel->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
-		case eRenderBasisVisualizer:
+		case RenderBasisVisualizer:
 			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		}
@@ -577,12 +577,12 @@ public:
 		m_mouseScrollDelta += vec2(x, y);
 	}
 
-    enum  {
-        eRenderObject,
-        eRenderSphere,
-        eRenderBasisVisualizer,
-    };
-    int m_renderType = eRenderObject;
+	enum  {
+		RenderObject,
+		RenderSphere,
+		RenderBasisVisualizer,
+	};
+	int m_renderType = RenderObject;
 
 	std::unique_ptr<ChangeMonitor> m_shaderChangeMonitor;
 
@@ -595,8 +595,8 @@ public:
 	TexturePtr m_radianceTexture;
 	TexturePtr m_irradianceTexture;
 	Blitter m_blitter;
-    std::unique_ptr<Model> m_model;
-    std::unique_ptr<Model> m_sphereModel;
+	std::unique_ptr<Model> m_model;
+	std::unique_ptr<Model> m_sphereModel;
 	std::unique_ptr<Model> m_basisModel;
 	CommonShaderUniforms m_shaderUniforms;
 	std::unique_ptr<CommonShaderPrograms> m_shaderPrograms;
@@ -609,9 +609,9 @@ public:
 	const ivec2 m_irradianceImageSize = ivec2(256, 128);
 	std::unique_ptr<Experiment::SharedData> m_experimentData;
 	std::vector<std::string> m_allExperimentNames;
-    std::vector<std::string> m_availableExperimentNames;
-    Probulator::ExperimentList m_experimentList;
-    ExperimentResultsList m_experimentResultsList;
+	std::vector<std::string> m_availableExperimentNames;
+	Probulator::ExperimentList m_experimentList;
+	ExperimentResultsList m_experimentResultsList;
 	int m_currentExperiment = 0;
 
 	mat4 m_worldMatrix = mat4(1.0f);
