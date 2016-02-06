@@ -4,6 +4,7 @@
 #include <Probulator/ExperimentSH.h>
 #include <Probulator/ExperimentSG.h>
 #include <Probulator/ExperimentHBasis.h>
+#include <Probulator/ExperimentAmbientCube.h>
 
 namespace Probulator
 {
@@ -36,6 +37,9 @@ void addAllExperiments(ExperimentList& experiments)
     addExperiment<ExperimentMC>(experiments, "Monte Carlo", "MC")
         .setHemisphereSampleCount(5000)
         .setEnabled(false); // disabled by default, since MCIS mode is superior
+
+	addExperiment<ExperimentAmbientCube>(experiments, "Ambient Cube", "AC")
+		.setInput(experimentMCIS);
 
     addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
 
