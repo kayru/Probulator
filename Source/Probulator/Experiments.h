@@ -158,6 +158,13 @@ public:
 
         run(data);
 
+        // Compute max irradiance sample
+        m_irradianceMax = FLT_MIN;
+        m_irradianceImage.forPixels2D([&](const vec4& v, ivec2 pixelPos)
+        {
+            m_irradianceMax = std::max((0.299f * v.r + 0.587f * v.g + 0.114f * v.b), m_irradianceMax);
+        });
+
         m_executed = true;
     }
 
@@ -210,6 +217,7 @@ public:
 
     Image m_radianceImage;
     Image m_irradianceImage;
+    float m_irradianceMax = 0.0f;
 };
 
 typedef std::vector<std::unique_ptr<Experiment>> ExperimentList;
