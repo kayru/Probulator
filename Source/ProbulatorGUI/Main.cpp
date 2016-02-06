@@ -102,6 +102,13 @@ public:
 		return reinterpret_cast<ImTextureID>((u64)texture->m_native);
 	}
 
+	void switchToExperiment(int experimentId)
+	{
+		m_previousExperiment = m_currentExperiment;
+		m_currentExperiment = experimentId;
+		generateIrradianceImage();
+	}
+
 	void updateImGui()
 	{
 		m_guiTextureReferences.clear();
@@ -120,9 +127,10 @@ public:
 		if (ImGui::CollapsingHeader("Mode", nullptr, true, true))
 		{
 			ImGui::PushItemWidth(-1.0f);
-			if (ImGui::Combo("", &m_currentExperiment, getComboItem, (void*)&m_allExperimentNames, (int)m_allExperimentNames.size()))
+			int currentExperiment = m_currentExperiment;
+			if (ImGui::Combo("", &currentExperiment, getComboItem, (void*)&m_allExperimentNames, (int)m_allExperimentNames.size()))
 			{
-				generateIrradianceImage();
+				switchToExperiment(currentExperiment);
 			}
 			ImGui::PopItemWidth();
 
@@ -574,6 +582,11 @@ public:
 			return;
 
 		m_keyDown[key] = action != GLFW_RELEASE;
+
+		if (key == GLFW_KEY_X && action == GLFW_PRESS)
+		{
+			switchToExperiment(m_previousExperiment);
+		}
 	}
 
 	void onScroll(float x, float y)
@@ -617,6 +630,7 @@ public:
 	Probulator::ExperimentList m_experimentList;
 	ExperimentResultsList m_experimentResultsList;
 	int m_currentExperiment = 0;
+	int m_previousExperiment = m_currentExperiment;
 
 	mat4 m_worldMatrix = mat4(1.0f);
 
