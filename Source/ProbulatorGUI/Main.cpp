@@ -457,10 +457,10 @@ public:
 			m_model->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		case RenderSphere:
-			m_sphereModel->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_sphereModel->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
 			break;
 		case RenderBasisVisualizer:
-			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
 			break;
 		}
 
