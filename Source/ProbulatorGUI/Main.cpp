@@ -388,6 +388,10 @@ public:
 		{
 			cameraControllerInput.moveUp -= 1.0f;
 		}
+		if (m_keyDown[GLFW_KEY_Z])
+		{
+			m_camera.m_position = vec3(0.0f, 0.0f, 0.0f);
+		}
 
 		cameraControllerInput.rotateSpeedMultiplier = min(1.0f, m_camera.m_fov);
 
