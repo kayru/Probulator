@@ -454,6 +454,11 @@ public:
 		
 		m_shaderUniforms.elapsedTime = (float)getElapsedTime(m_timeStart);
 
+		// scale world matrix to normalize the basis visualizer to be within [0, 1] bounds
+		mat4 basisWorldMat;
+		Experiment* experiment = m_experimentList[m_currentExperiment].get();
+		basisWorldMat = glm::scale(basisWorldMat, glm::vec3(1.0f / experiment->m_irradianceMax));
+
 		// draw scene
 
 		glViewport(0, 0, m_sceneViewport.x, m_sceneViewport.y);
@@ -472,7 +477,7 @@ public:
 			m_sphereModel->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
 			break;
 		case RenderBasisVisualizer:
-			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
+			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, basisWorldMat);
 			break;
 		}
 
