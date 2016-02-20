@@ -414,7 +414,7 @@ public:
 
 	void update()
 	{
-		if (m_shaderChangeMonitor->update())
+		if (m_shaderChangeMonitor && m_shaderChangeMonitor->update())
 		{
 			printf("Reloading shaders\n");
 			loadShaders();
