@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<table>
+<tr><td>Radiance</td><td>Irradiance</td><td>Irradiance Error (sMAPE)</td><td>Mode</td></tr>
+<tr><td valign="top"><img src="radianceMCIS.png"/></td><td valign="top"><img src="irradianceMCIS.png"/></td><td><center><b>N/A</b></center></td><td>Monte Carlo [Importance Sampling]<br><b>Reference</b></td></tr>
+<tr><td valign="top"><img src="radianceAC.png"/><br/>MSE: 18.5001 RMS: 4.30118</td><td valign="top"><img src="irradianceAC.png"/><br/>MSE: 0.0327691 RMS: 0.181022</td><td valign="top"><img src="irradianceErrorAC.png"/></td><td>Ambient Cube</td></tr>
+<tr><td valign="top"><img src="radianceSHL1G.png"/><br/>MSE: 11.5191 RMS: 3.39398</td><td valign="top"><img src="irradianceSHL1G.png"/><br/>MSE: 0.0183642 RMS: 0.135515</td><td valign="top"><img src="irradianceErrorSHL1G.png"/></td><td>Spherical Harmonics L1 [Geomerics]</td></tr>
+<tr><td valign="top"><img src="radianceSHL1.png"/><br/>MSE: 11.5191 RMS: 3.39398</td><td valign="top"><img src="irradianceSHL1.png"/><br/>MSE: 0.0748952 RMS: 0.27367</td><td valign="top"><img src="irradianceErrorSHL1.png"/></td><td>Spherical Harmonics L1</td></tr>
+<tr><td valign="top"><img src="radianceSHL2.png"/><br/>MSE: 7.8623 RMS: 2.80398</td><td valign="top"><img src="irradianceSHL2.png"/><br/>MSE: 0.00150324 RMS: 0.0387717</td><td valign="top"><img src="irradianceErrorSHL2.png"/></td><td>Spherical Harmonics L2</td></tr>
+<tr><td valign="top"><img src="radianceSHL3.png"/><br/>MSE: 5.23807 RMS: 2.28868</td><td valign="top"><img src="irradianceSHL3.png"/><br/>MSE: 0.00150324 RMS: 0.0387717</td><td valign="top"><img src="irradianceErrorSHL3.png"/></td><td>Spherical Harmonics L3</td></tr>
+<tr><td valign="top"><img src="radianceSHL4.png"/><br/>MSE: 3.68289 RMS: 1.91908</td><td valign="top"><img src="irradianceSHL4.png"/><br/>MSE: 0.000157428 RMS: 0.012547</td><td valign="top"><img src="irradianceErrorSHL4.png"/></td><td>Spherical Harmonics L4</td></tr>
+<tr><td valign="top"><img src="radianceSHL2W.png"/><br/>MSE: 10.4274 RMS: 3.22915</td><td valign="top"><img src="irradianceSHL2W.png"/><br/>MSE: 0.0662277 RMS: 0.257347</td><td valign="top"><img src="irradianceErrorSHL2W.png"/></td><td>Spherical Harmonics L2 [Windowed]</td></tr>
+<tr><td valign="top"><img src="radianceSG.png"/><br/>MSE: 9.78214 RMS: 3.12764</td><td valign="top"><img src="irradianceSG.png"/><br/>MSE: 0.0264724 RMS: 0.162703</td><td valign="top"><img src="irradianceErrorSG.png"/></td><td>Spherical Gaussians [Naive]</td></tr>
+<tr><td valign="top"><img src="radianceSGLS.png"/><br/>MSE: 6.26808 RMS: 2.50361</td><td valign="top"><img src="irradianceSGLS.png"/><br/>MSE: 0.021472 RMS: 0.146533</td><td valign="top"><img src="irradianceErrorSGLS.png"/></td><td>Spherical Gaussians [Least Squares]</td></tr>
+<tr><td valign="top"><img src="radianceSGLSA.png"/><br/>MSE: 6.24494 RMS: 2.49899</td><td valign="top"><img src="irradianceSGLSA.png"/><br/>MSE: 0.0213596 RMS: 0.146149</td><td valign="top"><img src="irradianceErrorSGLSA.png"/></td><td>Spherical Gaussians [Least Squares + Ambient]</td></tr>
+<tr><td valign="top"><img src="radianceSGNNLS.png"/><br/>MSE: 6.64067 RMS: 2.57695</td><td valign="top"><img src="irradianceSGNNLS.png"/><br/>MSE: 0.0389447 RMS: 0.197344</td><td valign="top"><img src="irradianceErrorSGNNLS.png"/></td><td>Spherical Gaussians [Non-Negative Least Squares]</td></tr>
+</table>
+</html>
