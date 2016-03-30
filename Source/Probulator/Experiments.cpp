@@ -52,9 +52,11 @@ void addAllExperiments(ExperimentList& experiments)
 		.setTargetLaplacian(10.0f); // Empirically chosen
 
     addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
-        .setInput(experimentMCIS);
+        .setInput(experimentMCIS)
+		.setEnabled(false);
     addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
-        .setInput(experimentMCIS);
+        .setInput(experimentMCIS)
+		.setEnabled(false);
 
     addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
         .setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
