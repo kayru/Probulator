@@ -8,8 +8,6 @@ Experimentation framework for probe-based lighting.
 Example report
 --------------
 
-#### Ennis.hdr ####
-
 | Radiance | Irradiance  | Irradiance Error (sMAPE) | Mode
 | --- | ---  | --- | ---
 | ![Radiance] [Ennis-radianceMCIS.png]| ![Irradiance] [Ennis-irradianceMCIS.png] | **N/A** | Monte Carlo <br>[Importance Sampling]<br>**Reference**
