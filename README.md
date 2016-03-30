@@ -3,6 +3,8 @@ Probulator
 
 Experimentation framework for probe-based lighting.
 
+![ProbulatorGUI_Armadillo](https://github.com/kayru/Probulator/raw/master/Screenshots/ProbulatorGUI_Armadillo.jpg)
+
 How to build
 ------------
 
@@ -32,11 +34,6 @@ How to run
 ----------
 
 Run **ProbulatorGUI** from the build output directory (`Build/Source/ProbulatorGUI/Release` by default).
-
-Screenshots
------------
-
-![ProbulatorGUI_Armadillo](https://github.com/kayru/Probulator/raw/master/Screenshots/ProbulatorGUI_Armadillo.jpg)
 
 Example report
 --------------
