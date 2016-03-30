@@ -23,43 +23,6 @@ Example report
 | ![Radiance] [Ennis-radianceSGLSA.png]| ![Irradiance] [Ennis-irradianceSGLSA.png]| ![IrradianceError] [Ennis-irradianceErrorSGLSA.png] | Spherical Gaussians <br>[Least Squares + Ambient]
 | ![Radiance] [Ennis-radianceSGNNLS.png]| ![Irradiance] [Ennis-irradianceSGNNLS.png]| ![IrradianceError] [Ennis-irradianceErrorSGNNLS.png] | Spherical Gaussians <br>[Non-Negative Least Squares]
 
-[Ennis-radianceMCIS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceMCIS.png
-[Ennis-irradianceMCIS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceMCIS.png
-[Ennis-radianceAC.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceAC.png
-[Ennis-irradianceAC.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceAC.png
-[Ennis-irradianceErrorAC.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorAC.png
-[Ennis-radianceSHL1G.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL1G.png
-[Ennis-irradianceSHL1G.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL1G.png
-[Ennis-irradianceErrorSHL1G.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL1G.png
-[Ennis-radianceSHL1.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL1.png
-[Ennis-irradianceSHL1.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL1.png
-[Ennis-irradianceErrorSHL1.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL1.png
-[Ennis-radianceSHL2.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL2.png
-[Ennis-irradianceSHL2.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL2.png
-[Ennis-irradianceErrorSHL2.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL2.png
-[Ennis-radianceSHL3.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL3.png
-[Ennis-irradianceSHL3.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL3.png
-[Ennis-irradianceErrorSHL3.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL3.png
-[Ennis-radianceSHL4.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL4.png
-[Ennis-irradianceSHL4.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL4.png
-[Ennis-irradianceErrorSHL4.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL4.png
-[Ennis-radianceSHL2W.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL2W.png
-[Ennis-irradianceSHL2W.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL2W.png
-[Ennis-irradianceErrorSHL2W.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL2W.png
-[Ennis-radianceSG.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSG.png
-[Ennis-irradianceSG.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSG.png
-[Ennis-irradianceErrorSG.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSG.png
-[Ennis-radianceSGLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSGLS.png
-[Ennis-irradianceSGLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGLS.png
-[Ennis-irradianceErrorSGLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGLS.png
-[Ennis-radianceSGLSA.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSGLSA.png
-[Ennis-irradianceSGLSA.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGLSA.png
-[Ennis-irradianceErrorSGLSA.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGLSA.png
-[Ennis-radianceSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSGNNLS.png
-[Ennis-irradianceSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGNNLS.png
-[Ennis-irradianceErrorSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGNNLS.png
-
-
 Other pre-generated reports in HTML and Markdown formats are [included in the repository](https://github.com/kayru/Probulator/tree/master/Reports).
 
 * [Ennis](https://github.com/kayru/Probulator/blob/master/Reports/Ennis/report.md)
@@ -117,3 +80,39 @@ HDR Probe Credits
 
  * Yuriy O'Donnell
  * David Neubelt
+
+[Ennis-radianceMCIS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceMCIS.png
+[Ennis-irradianceMCIS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceMCIS.png
+[Ennis-radianceAC.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceAC.png
+[Ennis-irradianceAC.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceAC.png
+[Ennis-irradianceErrorAC.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorAC.png
+[Ennis-radianceSHL1G.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL1G.png
+[Ennis-irradianceSHL1G.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL1G.png
+[Ennis-irradianceErrorSHL1G.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL1G.png
+[Ennis-radianceSHL1.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL1.png
+[Ennis-irradianceSHL1.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL1.png
+[Ennis-irradianceErrorSHL1.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL1.png
+[Ennis-radianceSHL2.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL2.png
+[Ennis-irradianceSHL2.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL2.png
+[Ennis-irradianceErrorSHL2.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL2.png
+[Ennis-radianceSHL3.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL3.png
+[Ennis-irradianceSHL3.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL3.png
+[Ennis-irradianceErrorSHL3.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL3.png
+[Ennis-radianceSHL4.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL4.png
+[Ennis-irradianceSHL4.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL4.png
+[Ennis-irradianceErrorSHL4.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL4.png
+[Ennis-radianceSHL2W.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSHL2W.png
+[Ennis-irradianceSHL2W.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSHL2W.png
+[Ennis-irradianceErrorSHL2W.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSHL2W.png
+[Ennis-radianceSG.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSG.png
+[Ennis-irradianceSG.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSG.png
+[Ennis-irradianceErrorSG.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSG.png
+[Ennis-radianceSGLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSGLS.png
+[Ennis-irradianceSGLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGLS.png
+[Ennis-irradianceErrorSGLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGLS.png
+[Ennis-radianceSGLSA.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSGLSA.png
+[Ennis-irradianceSGLSA.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGLSA.png
+[Ennis-irradianceErrorSGLSA.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGLSA.png
+[Ennis-radianceSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/radianceSGNNLS.png
+[Ennis-irradianceSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGNNLS.png
+[Ennis-irradianceErrorSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGNNLS.png
