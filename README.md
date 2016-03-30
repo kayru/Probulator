@@ -91,10 +91,8 @@ Example report
 [Ennis-irradianceSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceSGNNLS.png
 [Ennis-irradianceErrorSGNNLS.png]: https://github.com/kayru/Probulator/raw/master/Reports/Ennis/irradianceErrorSGNNLS.png
 
-Other reports
--------------
 
-Pre-generated reports in HTML and Markdown formats are included in the repository under [Reports](https://github.com/kayru/Probulator/tree/master/Reports).
+Other pre-generated reports in HTML and Markdown formats are [included in the repository](https://github.com/kayru/Probulator/tree/master/Reports).
 
 * [Ennis](https://github.com/kayru/Probulator/blob/master/Reports/Ennis/report.md)
 * [Grace](https://github.com/kayru/Probulator/blob/master/Reports/Grace/report.md)
