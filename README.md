@@ -75,8 +75,8 @@ HDR Probe Credits
  - pisa.hdr
  - uffizi.hdr
  
- Authors
- -------
+Authors
+-------
 
  * Yuriy O'Donnell
  * David Neubelt
