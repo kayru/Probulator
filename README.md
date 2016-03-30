@@ -5,36 +5,6 @@ Experimentation framework for probe-based lighting.
 
 ![ProbulatorGUI_Armadillo](https://github.com/kayru/Probulator/raw/master/Screenshots/ProbulatorGUI_Armadillo.jpg)
 
-How to build
-------------
-
-CMake is used to generate native build projects for target platform. 
-
-#### Windows, Visual Studio 2015 ####
-
-	mkdir Build
-	cd Build
-	cmake -G "Visual Studio 14 2015 Win64" ..
-	cmake --build . --config Release
-
-Visual Studio 2013 may also work.
-
-#### MacOS, Xcode ####
-
-	mkdir Build
-	cd Build
-	cmake -G Xcode ..
-	cmake --build . --config Release
-
-#### Linux ####
-
-Linux support is not fully implemented.
-
-How to run
-----------
-
-Run **ProbulatorGUI** from the build output directory (`Build/Source/ProbulatorGUI/Release` by default).
-
 Example report
 --------------
 
@@ -99,6 +69,36 @@ Other pre-generated reports in HTML and Markdown formats are [included in the re
 * [Pisa](https://github.com/kayru/Probulator/blob/master/Reports/Pisa/report.md)
 * [Uffizi](https://github.com/kayru/Probulator/blob/master/Reports/Uffizi/report.md)
 * [Wells](https://github.com/kayru/Probulator/blob/master/Reports/Wells/report.md)
+
+How to build
+------------
+
+CMake is used to generate native build projects for target platform. 
+
+#### Windows, Visual Studio 2015 ####
+
+	mkdir Build
+	cd Build
+	cmake -G "Visual Studio 14 2015 Win64" ..
+	cmake --build . --config Release
+
+Visual Studio 2013 may also work.
+
+#### MacOS, Xcode ####
+
+	mkdir Build
+	cd Build
+	cmake -G Xcode ..
+	cmake --build . --config Release
+
+#### Linux ####
+
+Linux support is not fully implemented.
+
+How to run
+----------
+
+Run **ProbulatorGUI** from the build output directory (`Build/Source/ProbulatorGUI/Release` by default).
 
 HDR Probe Credits
 -----------------
