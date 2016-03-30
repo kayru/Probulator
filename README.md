@@ -13,6 +13,10 @@ For example, Visual Studio 2013 project can be generated like so:
 	cd Build
 	cmake -G "Visual Studio 12 2013 Win64" ..
 
+Screenshots
+-----------
+
+![ProbulatorGUI_Armadillo](https://github.com/kayru/Probulator/raw/master/Screenshots/ProbulatorGUI_Armadillo.jpg)
 
 HDR Probe Credits
 -----------------
