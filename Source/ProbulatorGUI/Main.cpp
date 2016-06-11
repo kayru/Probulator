@@ -109,7 +109,7 @@ public:
 		generateIrradianceImage();
 	}
 
-	void updateImGui()
+	void updateImGui(GLFWwindow* window)
 	{
 		m_guiTextureReferences.clear();
 
@@ -181,7 +181,9 @@ public:
 			if (ImGui::Button("Load HDR"))
 			{
 				nfdchar_t* filename = nullptr;
-				if (NFD_OpenDialog("hdr", nullptr, &filename) == NFD_OKAY)
+				auto dialogResult = NFD_OpenDialog("hdr", nullptr, &filename);
+				glfwMakeContextCurrent(window); // Open dialog resets OpenGL context on MacOS
+				if (dialogResult == NFD_OKAY)
 				{
 					loadEnvmap(filename);
 				}
@@ -204,7 +206,9 @@ public:
 			if (ImGui::Button("Load OBJ"))
 			{
 				nfdchar_t* filename = nullptr;
-				if (NFD_OpenDialog("obj", nullptr, &filename) == NFD_OKAY)
+				auto dialogResult = NFD_OpenDialog("obj", nullptr, &filename);
+				glfwMakeContextCurrent(window); // Open dialog resets OpenGL context on MacOS
+				if (dialogResult == NFD_OKAY)
 				{
 					loadModel(filename);
 				}
@@ -414,7 +418,7 @@ public:
 			positionAlpha, orientationAlpha);
 	}
 
-	void update()
+	void update(GLFWwindow* window)
 	{
 		if (m_shaderChangeMonitor && m_shaderChangeMonitor->update())
 		{
@@ -424,7 +428,7 @@ public:
 
 		updateObject();
 		updateCamera();
-		updateImGui();
+		updateImGui(window);
 
 		m_oldMousePosition = m_mousePosition;
 		m_mouseScrollDelta = vec2(0.0f);
@@ -765,7 +769,7 @@ int main(int argc, char** argv)
 	{
 		ImGui_ImplGlfwGL3_NewFrame();
 
-		app->update();
+		app->update(window);
 		app->render();
 
 		glfwSwapBuffers(window);
