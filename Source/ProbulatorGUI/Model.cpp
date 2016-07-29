@@ -11,7 +11,7 @@ Model::Model(const char* objFilename)
 
 Model::Model(const ProceduralSphere& sphere)
 {
-	generateSphere(sphere.numUSlices, sphere.numVSlices);
+	generateSphere(sphere);
 }
 
 Model::Model(const ProceduralPlane& plane)
@@ -177,8 +177,11 @@ void Model::generatePlane(const ProceduralPlane& plane)
 	createBuffers(vertices, 4, indices, 6);
 }
 
-void Model::generateSphere(u64 NumUSlices, u64 NumVSlices)
+void Model::generateSphere(const ProceduralSphere& sphere)
 {
+	const u64 NumUSlices = sphere.numUSlices;
+	const u64 NumVSlices = sphere.numVSlices;
+	
     m_boundsMin = vec3(-1.0f, -1.0f, -1.0f);
     m_boundsMax = vec3(+1.0f, +1.0f, +1.0f);
     m_dimensions = m_boundsMax - m_boundsMin;

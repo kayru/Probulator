@@ -12,7 +12,7 @@ public:
 	struct ProceduralSphere
 	{
 		u64 numUSlices = 256;
-		u64 numVSlices = 256;
+		u64 numVSlices = 192;
 	};
 
 	struct ProceduralPlane
@@ -34,7 +34,7 @@ public:
 	};
 
 	bool readObj(const char* objFilename, bool forceGenerateNormals);
-    void generateSphere(u64 numUSlices = 256, u64 numVSlices = 192);
+    void generateSphere(const ProceduralSphere& sphere);
 	void generatePlane(const ProceduralPlane& plane);
 
 	void createBuffers(const Vertex* vertices, u32 vertexCount, const u32* indices, u32 indexCount);
