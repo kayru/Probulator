@@ -10,7 +10,6 @@ out vec4 Target;
 
 void main()
 {
-	vec3 albedo = vec3(1.0);
 	vec3 normal = normalize(vWorldNormal);
 	vec2 texCoord = vTexCoord0;
 	vec3 irradiance = texture(Texture0, texCoord).xyz;
