@@ -116,8 +116,10 @@ CommonShaderPrograms::CommonShaderPrograms()
 
 	auto vsModelDefault = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/Model.vert");
 	auto vsModelBasisVisualizer = createShaderFromFile(GL_VERTEX_SHADER, "Data/Shaders/BasisVisualizer.vert");
-	auto psModelLatLongIrradiance = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/Model.frag");
+	auto psModelIrradianceEnvmap = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/ModelIrradianceEnvmap.frag");
+	auto psModelIrradianceLightmap = createShaderFromFile(GL_FRAGMENT_SHADER, "Data/Shaders/ModelIrradianceLightmap.frag");
 
-	modelIrradiance = createShaderProgram(*vsModelDefault, *psModelLatLongIrradiance, vfModel);
-	modelBasisVisualizer = createShaderProgram(*vsModelBasisVisualizer, *psModelLatLongIrradiance, vfModel);
+	modelIrradianceLightmap = createShaderProgram(*vsModelDefault, *psModelIrradianceLightmap, vfModel);
+	modelIrradianceEnvmap = createShaderProgram(*vsModelDefault, *psModelIrradianceEnvmap, vfModel);
+	modelBasisVisualizer = createShaderProgram(*vsModelBasisVisualizer, *psModelIrradianceEnvmap, vfModel);
 }

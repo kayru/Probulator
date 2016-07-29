@@ -68,8 +68,10 @@ public:
 		memset(m_mouseButtonDown, 0, sizeof(m_mouseButtonDown));
 		memset(m_mouseButtonDownPosition, 0, sizeof(m_mouseButtonDownPosition));
 		memset(m_keyDown, 0, sizeof(m_keyDown));
+
 		loadResources();
 
+		m_planeModel = std::unique_ptr<Model>(new Model(Model::ProceduralPlane()));
 		m_sphereModel = std::unique_ptr<Model>(new Model(Model::ProceduralSphere()));
 		m_basisModel = std::unique_ptr<Model>(new Model(Model::ProceduralSphere()));
 
@@ -215,7 +217,7 @@ public:
 				free(filename);
 			}
 
-			const char* renderTypeStrs[] = { "Render Object", "Render Sphere", "Render Basis Visualizer" };
+			const char* renderTypeStrs[] = { "Render Object", "Render Plane", "Render Sphere", "Render Basis Visualizer" };
 			int sz = int(sizeof(renderTypeStrs) / sizeof(const char*));
 			ImGui::Combo("Render Type", &m_renderType, renderTypeStrs, sz);
 		}
@@ -477,10 +479,13 @@ public:
 		switch (m_renderType)
 		{
 		case RenderObject:
-			m_model->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_model->draw(*m_shaderPrograms->modelIrradianceEnvmap, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			break;
+		case RenderPlane:
+			m_planeModel->draw(*m_shaderPrograms->modelIrradianceLightmap, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		case RenderSphere:
-			m_sphereModel->draw(*m_shaderPrograms->modelIrradiance, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
+			m_sphereModel->draw(*m_shaderPrograms->modelIrradianceEnvmap, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
 			break;
 		case RenderBasisVisualizer:
 			m_basisModel->draw(*m_shaderPrograms->modelBasisVisualizer, m_shaderUniforms, *m_irradianceTexture, basisWorldMat);
@@ -607,10 +612,12 @@ public:
 
 	enum  {
 		RenderObject,
+		RenderPlane,
 		RenderSphere,
 		RenderBasisVisualizer,
 	};
-	int m_renderType = RenderObject;
+
+	int m_renderType = RenderPlane;
 
 	std::unique_ptr<ChangeMonitor> m_shaderChangeMonitor;
 
@@ -618,12 +625,13 @@ public:
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
 	ivec2 m_windowSize = ivec2(1280, 720);
 	ivec2 m_sceneViewport = ivec2(1, 1);
-	int m_menuWidth = 660;
+	int m_menuWidth = max(100, m_windowSize.x - m_windowSize.y);
 	Image m_radianceImage;
 	TexturePtr m_radianceTexture;
 	TexturePtr m_irradianceTexture;
 	Blitter m_blitter;
 	std::unique_ptr<Model> m_model;
+	std::unique_ptr<Model> m_planeModel;
 	std::unique_ptr<Model> m_sphereModel;
 	std::unique_ptr<Model> m_basisModel;
 	CommonShaderUniforms m_shaderUniforms;

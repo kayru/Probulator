@@ -23,7 +23,8 @@ public:
 	ShaderProgramPtr blitTexture2D;
 	ShaderProgramPtr blitLatLongEnvmap;
 
-	ShaderProgramPtr modelIrradiance;
+	ShaderProgramPtr modelIrradianceLightmap;
+	ShaderProgramPtr modelIrradianceEnvmap;
 	ShaderProgramPtr modelBasisVisualizer;
 };
 

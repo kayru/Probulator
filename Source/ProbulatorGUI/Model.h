@@ -3,6 +3,7 @@
 #include "Shaders.h"
 
 #include <Probulator/Math.h>
+#include <vector>
 
 class Model : NonCopyable
 {
@@ -14,9 +15,15 @@ public:
 		u64 numVSlices = 256;
 	};
 
+	struct ProceduralPlane
+	{
+		vec2 dimensions = vec2(1.0f);
+	};
+
 
 	Model(const char* objFilename);
 	Model(const ProceduralSphere& sphere);
+	Model(const ProceduralPlane& plane);
 	~Model();
 
 	struct Vertex
@@ -28,6 +35,10 @@ public:
 
 	bool readObj(const char* objFilename, bool forceGenerateNormals);
     void generateSphere(u64 numUSlices = 256, u64 numVSlices = 192);
+	void generatePlane(const ProceduralPlane& plane);
+
+	void createBuffers(const Vertex* vertices, u32 vertexCount, const u32* indices, u32 indexCount);
+	void createBuffers(const std::vector<Vertex>& vertices, const std::vector<u32>& indices);
 
 	bool m_valid = false;
 	

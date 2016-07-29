@@ -2,7 +2,6 @@
 #include "Shaders.h"
 
 #include <tiny_obj_loader.h>
-#include <vector>
 
 Model::Model(const char* objFilename)
 {
@@ -13,6 +12,11 @@ Model::Model(const char* objFilename)
 Model::Model(const ProceduralSphere& sphere)
 {
 	generateSphere(sphere.numUSlices, sphere.numVSlices);
+}
+
+Model::Model(const ProceduralPlane& plane)
+{
+	generatePlane(plane);
 }
 
 Model::~Model()
@@ -109,22 +113,68 @@ bool Model::readObj(const char* objFilename, bool forceGenerateNormals)
 		{
 			indices.push_back(index + firstVertex);
 		}
-
-		m_indexCount = (u32)indices.size();
 	}
 
 	m_dimensions = m_boundsMax - m_boundsMin;
 	m_center = (m_boundsMax + m_boundsMin) / 2.0f;
 
+	createBuffers(vertices, indices);
+
+	return m_valid;
+}
+
+void Model::createBuffers(const Vertex* vertices, u32 vertexCount, const u32* indices, u32 indexCount)
+{
+	m_indexCount = indexCount;
+
 	glGenBuffers(1, &m_vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex), vertices, GL_STATIC_DRAW);
 
 	glGenBuffers(1, &m_indexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(u32), indices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(u32), indices, GL_STATIC_DRAW);
+}
 
-	return m_valid;
+void Model::createBuffers(const std::vector<Vertex>& vertices, const std::vector<u32>& indices)
+{
+	createBuffers(vertices.data(), (u32)vertices.size(), indices.data(), (u32)indices.size());
+}
+
+void Model::generatePlane(const ProceduralPlane& plane)
+{
+	vec2 halfSize = plane.dimensions * 0.5f;
+
+    m_boundsMin = vec3(-halfSize, 0.0f);
+    m_boundsMax = vec3(halfSize, 0.0f);
+    m_dimensions = m_boundsMax - m_boundsMin;
+    m_center = vec3(0.0f, 0.0f, 0.0f);
+    m_valid = true;
+
+	auto makeVert = [](vec3 p, vec3 n, vec2 t)
+	{
+		Vertex v;
+		v.position = p;
+		v.normal = n;
+		v.texCoord = t;
+		return v;
+	};
+
+	Vertex vertices[4] =
+	{
+		makeVert(vec3(-halfSize.x, -halfSize.y, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec2(0.0f, 1.0f)),
+		makeVert(vec3(+halfSize.x, -halfSize.y, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec2(1.0f, 1.0f)),
+		makeVert(vec3(-halfSize.x, +halfSize.y, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec2(0.0f, 0.0f)),
+		makeVert(vec3(+halfSize.x, +halfSize.y, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec2(1.0f, 0.0f)),
+	};
+
+	u32 indices[6] =
+	{
+		0, 1, 2,
+		2, 1, 3
+	};
+
+	createBuffers(vertices, 4, indices, 6);
 }
 
 void Model::generateSphere(u64 NumUSlices, u64 NumVSlices)
@@ -221,15 +271,7 @@ void Model::generateSphere(u64 NumUSlices, u64 NumVSlices)
             sphereIndices.push_back(lastRingStart);
     }
 
-    m_indexCount = (u32)sphereIndices.size();
-
-    glGenBuffers(1, &m_vertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sphereVerts.size() * sizeof(Vertex), sphereVerts.data(), GL_STATIC_DRAW);
-
-    glGenBuffers(1, &m_indexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(u32), sphereIndices.data(), GL_STATIC_DRAW);
+	createBuffers(sphereVerts, sphereIndices);
 }
 
 void Model::draw(

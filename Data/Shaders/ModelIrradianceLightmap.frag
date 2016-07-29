@@ -12,9 +12,9 @@ void main()
 {
 	vec3 albedo = vec3(1.0);
 	vec3 normal = normalize(vWorldNormal);
-	vec2 texCoord = cartesianToLatLongTexcoord(normal);
+	vec2 texCoord = vTexCoord0;
 	vec3 irradiance = texture(Texture0, texCoord).xyz;
-	vec3 color = albedo * irradiance;
+	vec3 color = irradiance;
 
 	color = tonemapLinear(color, uExposure);
 	color = applyDithering(color, gl_FragCoord.xy / uResolution, uElapsedTime);
