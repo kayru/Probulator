@@ -38,6 +38,32 @@ namespace Probulator
 		}
 	}
 
+	bool Image::readPng(const char* filename)
+	{
+		int w, h, comp;
+		u8* imageData = stbi_load(filename, &w, &h, &comp, 3);
+		if (!imageData)
+		{
+			printf("ERROR: Failed to load image from file '%s'\n", filename);
+			return false;
+		}
+
+		ivec2 size(w, h);
+		*this = Image(size);
+
+		for (size_t i = 0; i < m_pixels.size(); ++i)
+		{
+			u8 r = imageData[i*3 + 0];
+			u8 g = imageData[i*3 + 1];
+			u8 b = imageData[i*3 + 2];
+			m_pixels[i] = vec4(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
+		}
+
+		free(imageData);
+
+		return true;
+	}
+
 	bool Image::readHdr(const char* filename)
 	{
 		int w, h, comp;

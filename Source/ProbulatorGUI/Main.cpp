@@ -482,7 +482,7 @@ public:
 			m_model->draw(*m_shaderPrograms->modelIrradianceEnvmap, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		case RenderPlane:
-			m_planeModel->draw(*m_shaderPrograms->modelIrradianceLightmap, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
+			m_planeModel->draw(*m_shaderPrograms->modelIrradianceLightmap, m_shaderUniforms, *m_normalTexture, m_worldMatrix);
 			break;
 		case RenderSphere:
 			m_sphereModel->draw(*m_shaderPrograms->modelIrradianceEnvmap, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
@@ -507,6 +507,7 @@ public:
 	void loadResources()
 	{
 		loadShaders();
+		loadNormalmap(m_normalFilename.c_str());
 		loadEnvmap(m_envmapFilename.c_str());
 		loadModel(m_objectFilename.c_str());
 	}
@@ -549,6 +550,31 @@ public:
 		filter.wrapV = GL_CLAMP_TO_EDGE;
 
 		m_irradianceTexture = createTextureFromImage(experiment->m_irradianceImage, filter);
+	}
+
+	void loadNormalmap(const char* filename)
+	{
+		printf("Loading normalmap '%s'\n", filename);
+
+		m_normalFilename = filename;
+
+		bool imageLoaded = m_normalImage.readPng(filename);
+		m_normalImage.forPixels([](vec4& p)
+		{
+			p.x = p.x * 2.0f - 1.0f;
+			p.y = p.y * 2.0f - 1.0f;
+			p.z = p.z * 2.0f - 1.0f;
+		});
+
+		if (!imageLoaded)
+		{
+			m_normalImage = Image(4, 4);
+			m_normalImage.fill(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		}
+
+		TextureFilter filter = makeTextureFilter(GL_CLAMP_TO_EDGE, GL_LINEAR);
+
+		m_normalTexture = createTextureFromImage(m_normalImage, filter);
 	}
 
 	void loadEnvmap(const char* filename)
@@ -623,12 +649,15 @@ public:
 
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
+	std::string m_normalFilename = "Data/Textures/monkey_n.png";
 	ivec2 m_windowSize = ivec2(1280, 720);
 	ivec2 m_sceneViewport = ivec2(1, 1);
 	int m_menuWidth = max(100, m_windowSize.x - m_windowSize.y);
 	Image m_radianceImage;
+	Image m_normalImage;
 	TexturePtr m_radianceTexture;
 	TexturePtr m_irradianceTexture;
+	TexturePtr m_normalTexture;
 	Blitter m_blitter;
 	std::unique_ptr<Model> m_model;
 	std::unique_ptr<Model> m_planeModel;

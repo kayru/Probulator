@@ -136,6 +136,7 @@ namespace Probulator
 		float* data() { return m_pixels.empty() ? nullptr : &m_pixels[0].x; }
 		const float* data() const { return m_pixels.empty() ? nullptr : &m_pixels[0].x; }
 
+		bool readPng(const char* filename);
 		bool readHdr(const char* filename);
 
 		void writeHdr(const char* filename) const;
