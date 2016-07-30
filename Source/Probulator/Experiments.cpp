@@ -5,6 +5,7 @@
 #include <Probulator/ExperimentSG.h>
 #include <Probulator/ExperimentHBasis.h>
 #include <Probulator/ExperimentAmbientCube.h>
+#include <Probulator/ExperimentRNM.h>
 
 namespace Probulator
 {
@@ -63,6 +64,10 @@ void addAllExperiments(ExperimentList& experiments)
     addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
         .setInput(experimentMCIS)
 		.setEnabled(false);
+
+    addExperiment<ExperimentRNM>(experiments, "Radiosity Normal Mapping", "RNM")
+        .setInput(experimentMCIS)
+        .setEnabled(false);
 
     addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
         .setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation

@@ -64,7 +64,7 @@ public:
             for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
             {
                 vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
-                vec3 direction = m_basis * sampleUniformSphere(sampleUv);
+                vec3 direction = sampleUniformSphere(sampleUv);
 
                 vec3 sample = (vec3)image.sampleNearest(cartesianToLatLongTexcoord(direction));
 
@@ -135,8 +135,6 @@ public:
 
         ivec2 m_outputSize;
         u32 m_sampleCount;
-
-		mat3 m_basis = mat3(1.0f);
     };
 
 	virtual void getProperties(std::vector<Property>& outProperties)

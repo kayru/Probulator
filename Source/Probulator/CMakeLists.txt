@@ -1,28 +1,30 @@
 add_library(Probulator
-	Compute.cpp
-	Experiments.cpp
-	Image.cpp
-	SGBasis.cpp
-	SGFitGeneticAlgorithm.cpp
-	SGFitLeastSquares.cpp
-	SphericalGaussian.cpp
 	Common.h
+	Compute.cpp
 	Compute.h
 	DiscreteDistribution.h
-	ExperimentAmbientCube.h
 	ExperimentAmbientCube.cpp
+	ExperimentAmbientCube.h
 	ExperimentHBasis.h
 	ExperimentMonteCarlo.h
+	ExperimentRNM.cpp
+	ExperimentRNM.h
+	Experiments.cpp
 	Experiments.h
 	ExperimentSG.h
 	ExperimentSH.h
 	HBasis.h
+	Image.cpp
 	Image.h
 	Math.h
 	RadianceSample.h
+	SGBasis.cpp
 	SGBasis.h
+	SGFitGeneticAlgorithm.cpp
 	SGFitGeneticAlgorithm.h
+	SGFitLeastSquares.cpp
 	SGFitLeastSquares.h
+	SphericalGaussian.cpp
 	SphericalGaussian.h
 	SphericalHarmonics.h
 	Thread.h

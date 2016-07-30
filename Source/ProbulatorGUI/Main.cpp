@@ -482,7 +482,7 @@ public:
 			m_model->draw(*m_shaderPrograms->modelIrradianceEnvmap, m_shaderUniforms, *m_irradianceTexture, m_worldMatrix);
 			break;
 		case RenderPlane:
-			m_planeModel->draw(*m_shaderPrograms->modelIrradianceLightmap, m_shaderUniforms, *m_normalTexture, m_worldMatrix);
+			m_planeModel->draw(*m_shaderPrograms->modelIrradianceLightmap, m_shaderUniforms, *m_normalIrradianceTexture, m_worldMatrix);
 			break;
 		case RenderSphere:
 			m_sphereModel->draw(*m_shaderPrograms->modelIrradianceEnvmap, m_shaderUniforms, *m_irradianceTexture, mat4(1.0f));
@@ -550,6 +550,17 @@ public:
 		filter.wrapV = GL_CLAMP_TO_EDGE;
 
 		m_irradianceTexture = createTextureFromImage(experiment->m_irradianceImage, filter);
+
+		m_normalIrradianceImage = Image(m_normalImage.getSize());
+		m_normalIrradianceImage.forPixels2D([&](vec4& pixel, ivec2 pixelPos)
+		{
+			vec3 n = (vec3)m_normalImage.at(pixelPos);
+			vec2 texcoord = cartesianToLatLongTexcoord(n);
+			pixel = experiment->m_irradianceImage.sampleNearest(texcoord);
+		});
+		m_normalIrradianceTexture = createTextureFromImage(
+			m_normalIrradianceImage,
+			makeTextureFilter(GL_CLAMP_TO_EDGE, GL_LINEAR));
 	}
 
 	void loadNormalmap(const char* filename)
@@ -561,15 +572,17 @@ public:
 		bool imageLoaded = m_normalImage.readPng(filename);
 		m_normalImage.forPixels([](vec4& p)
 		{
-			p.x = p.x * 2.0f - 1.0f;
-			p.y = p.y * 2.0f - 1.0f;
-			p.z = p.z * 2.0f - 1.0f;
+			vec3 n = (vec3)p;
+			n = normalize(n * 2.0f - 1.0f);
+			p.x = n.x;
+			p.y = n.y;
+			p.z = n.z;
 		});
 
 		if (!imageLoaded)
 		{
 			m_normalImage = Image(4, 4);
-			m_normalImage.fill(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+			m_normalImage.fill(vec4(0.0f, 0.0f, 1.0f, 1.0f));
 		}
 
 		TextureFilter filter = makeTextureFilter(GL_CLAMP_TO_EDGE, GL_LINEAR);
@@ -643,7 +656,7 @@ public:
 		RenderBasisVisualizer,
 	};
 
-	int m_renderType = RenderPlane;
+	int m_renderType = RenderObject;
 
 	std::unique_ptr<ChangeMonitor> m_shaderChangeMonitor;
 
@@ -655,9 +668,11 @@ public:
 	int m_menuWidth = max(100, m_windowSize.x - m_windowSize.y);
 	Image m_radianceImage;
 	Image m_normalImage;
+	Image m_normalIrradianceImage;
 	TexturePtr m_radianceTexture;
-	TexturePtr m_irradianceTexture;
-	TexturePtr m_normalTexture;
+	TexturePtr m_irradianceTexture; // lat-long irradiance envmap
+	TexturePtr m_normalTexture; // world-space normal map
+	TexturePtr m_normalIrradianceTexture; // 2d texture produced by sampling irradiance using the normal map
 	Blitter m_blitter;
 	std::unique_ptr<Model> m_model;
 	std::unique_ptr<Model> m_planeModel;

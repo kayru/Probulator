@@ -49,44 +49,28 @@ namespace Probulator
 	{
 		HBasisT<float, L> result;
 
-        if(p.z < 0.0f) {
-            for(size_t i = 0; i < L; ++i)
-                result[i] = 0.0f;
-
-            return result;
-        }
-
-		const float x = -p.x;
-		const float y = -p.y;
-		const float z = p.z;
+		const float x = p.x;
+		const float y = p.y;
+		const float z = -p.z;
 
 		const float x2 = x*x;
 		const float y2 = y*y;
-		//const float z2 = z*z;
-
-		//const float z3 = z2*z;
-
-		//const float x4 = x2*x2;
-		//const float y4 = y2*y2;
-		//const float z4 = z2*z2;
-
-		const float sqrtPi = sqrt(pi);
 
 		size_t i = 0;
 
-		result[i++] =  1.0f/(2.0f*sqrtPi);
+		result[i++] =  1.0f/sqrtf(twoPi);
 
 		if (L >= 4)
 		{
-			result[i++] = -sqrt(3.0f/(2.0f*pi))*y;
-			result[i++] =  sqrt(3.0f/(2.0f*pi))*(2*z - 1.0f);
-			result[i++] = -sqrt(3.0f/(2.0f*pi))*x;
+			result[i++] = -sqrt(3.0f/twoPi)*y;
+			result[i++] =  sqrt(3.0f/twoPi)*(2*z - 1.0f);
+			result[i++] = -sqrt(3.0f/twoPi)*x;
 		}
 
 		if (L >= 6)
 		{
-			result[i++] =        sqrt(15.0f / (2.0f*pi))*x*y;
-			result[i++] = 0.5f * sqrt(15.0f / (2.0f*pi))*(x2 - y2);
+			result[i++] =        sqrt(15.0f / twoPi)*x*y;
+			result[i++] = 0.5f * sqrt(15.0f / twoPi)*(x2 - y2);
 		}
 
 		return result;

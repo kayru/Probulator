@@ -15,13 +15,13 @@ public:
         const u32 sampleCount = (u32)data.m_radianceSamples.size();
         for (const RadianceSample& sample : data.m_radianceSamples)
         {
-            hAddWeighted(hRadiance, hEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
+            hAddWeighted(hRadiance, hEvaluate<L>(sample.direction), sample.value  / (float)sampleCount);
         }
 
         HBasisT<vec3, L> hIrradiance = {};
         for (const RadianceSample& sample : data.m_irradianceSamples)
         {
-            hAddWeighted(hIrradiance, hEvaluate<L>(sample.direction), sample.value * (fourPi / sampleCount));
+            hAddWeighted(hIrradiance, hEvaluate<L>(sample.direction), sample.value / (float)sampleCount);
         }
 
         m_radianceImage = Image(data.m_outputSize);
