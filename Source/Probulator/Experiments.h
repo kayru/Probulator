@@ -58,13 +58,13 @@ public:
     {
     private:
 
-        void GenerateSamples(u32 sampleCount, Image& image, std::vector<RadianceSample>& samples)
+        void generateSamples(u32 sampleCount, Image& image, std::vector<RadianceSample>& samples)
         {
             samples.reserve(sampleCount);
             for (u32 sampleIt = 0; sampleIt < sampleCount; ++sampleIt)
             {
                 vec2 sampleUv = sampleHammersley(sampleIt, sampleCount);
-                vec3 direction = sampleUniformSphere(sampleUv);
+                vec3 direction = m_basis * sampleUniformSphere(sampleUv);
 
                 vec3 sample = (vec3)image.sampleNearest(cartesianToLatLongTexcoord(direction));
 
@@ -89,9 +89,9 @@ public:
 
 		SharedData(u32 sampleCount, ivec2 outputSize, const Image& radianceImage)
 			: m_directionImage(outputSize)
+			, m_radianceImage(radianceImage)
 			, m_outputSize(outputSize)
 			, m_sampleCount(sampleCount)
-			, m_radianceImage(radianceImage)
 
 		{
 			initialize();
@@ -110,7 +110,7 @@ public:
 				direction = latLongTexcoordToCartesian(uv);
 			});
 
-			GenerateSamples(m_sampleCount, m_radianceImage, m_radianceSamples);
+			generateSamples(m_sampleCount, m_radianceImage, m_radianceSamples);
 		}
 
         bool isValid() const
@@ -120,7 +120,7 @@ public:
 
         void GenerateIrradianceSamples(Image& irradianceimage)
         {
-            GenerateSamples(m_sampleCount, irradianceimage, m_irradianceSamples);
+            generateSamples(m_sampleCount, irradianceimage, m_irradianceSamples);
         }
 
         // directions corresponding to lat-long texels
@@ -135,6 +135,8 @@ public:
 
         ivec2 m_outputSize;
         u32 m_sampleCount;
+
+		mat3 m_basis = mat3(1.0f);
     };
 
 	virtual void getProperties(std::vector<Property>& outProperties)

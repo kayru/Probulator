@@ -38,7 +38,12 @@ void addAllExperiments(ExperimentList& experiments)
         .setHemisphereSampleCount(5000)
         .setEnabled(false); // disabled by default, since MCIS mode is superior
 
-	addExperiment<ExperimentAmbientCube>(experiments, "Ambient Cube", "AC")
+	addExperiment<ExperimentAmbientCube>(experiments, "Ambient Cube [Non-Negative Least Squares]", "AC")
+		.setProjectionEnabled(false)
+		.setInput(experimentMCIS);
+
+	addExperiment<ExperimentAmbientCube>(experiments, "Ambient Cube [Projection]", "ACPROJ")
+		.setProjectionEnabled(true)
 		.setInput(experimentMCIS);
 
     addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
@@ -54,6 +59,7 @@ void addAllExperiments(ExperimentList& experiments)
     addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
         .setInput(experimentMCIS)
 		.setEnabled(false);
+
     addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
         .setInput(experimentMCIS)
 		.setEnabled(false);

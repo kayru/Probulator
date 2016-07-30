@@ -5,7 +5,7 @@
 
 namespace Probulator {
 
-ExperimentAmbientCube::AmbientCube ExperimentAmbientCube::solveAmbientCube(const ImageBase<vec3>& directions, const Image& irradiance)
+ExperimentAmbientCube::AmbientCube ExperimentAmbientCube::solveAmbientCubeLeastSquares(const ImageBase<vec3>& directions, const Image& irradiance)
 {
 	using namespace Eigen;
 
@@ -79,9 +79,41 @@ ExperimentAmbientCube::AmbientCube ExperimentAmbientCube::solveAmbientCube(const
 	return ambientCube;
 }
 
+ExperimentAmbientCube::AmbientCube ExperimentAmbientCube::solveAmbientCubeProjection(const Image& irradiance)
+{
+	AmbientCube ambientCube;
+
+	vec3 cubeDirections[6] =
+	{
+		vec3(-1.0f, 0.0f, 0.0f),
+		vec3(+1.0f, 0.0f, 0.0f),
+		vec3(0.0f, -1.0f, 0.0f),
+		vec3(0.0f, +1.0f, 0.0f),
+		vec3(0.0f, 0.0f, -1.0f),
+		vec3(0.0f, 0.0f, +1.0f),
+	};
+
+	for(u32 i=0; i<6; ++i)
+	{
+		vec2 texcoord = cartesianToLatLongTexcoord(cubeDirections[i]);
+		ambientCube.irradiance[i] = (vec3)irradiance.sampleNearest(texcoord);
+	}
+
+	return ambientCube;
+}
+
 void ExperimentAmbientCube::run(SharedData& data)
 {
-	AmbientCube ambientCube = solveAmbientCube(data.m_directionImage, m_input->m_irradianceImage);
+	AmbientCube ambientCube;
+
+	if (m_projectionEnabled)
+	{
+		ambientCube = solveAmbientCubeProjection(m_input->m_irradianceImage);
+	}
+	else
+	{
+		ambientCube = solveAmbientCubeLeastSquares(data.m_directionImage, m_input->m_irradianceImage);
+	}
 
 	m_radianceImage = Image(data.m_outputSize);
 	m_irradianceImage = Image(data.m_outputSize);

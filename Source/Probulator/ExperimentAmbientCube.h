@@ -25,9 +25,24 @@ public:
 		}
 	};
 
-	static AmbientCube solveAmbientCube(const ImageBase<vec3>& directions, const Image& irradiance);
+	static AmbientCube solveAmbientCubeLeastSquares(const ImageBase<vec3>& directions, const Image& irradiance);
+	static AmbientCube solveAmbientCubeProjection(const Image& irradiance);
 
 	void run(SharedData& data) override;
+
+	void getProperties(std::vector<Property>& outProperties) override
+	{
+		Experiment::getProperties(outProperties);
+		outProperties.push_back(Property("Use projection", reinterpret_cast<int*>(&m_projectionEnabled)));
+	}
+
+	ExperimentAmbientCube& setProjectionEnabled(bool state)
+    {
+        m_projectionEnabled = state;
+        return *this;
+    }
+
+	bool m_projectionEnabled = false;
 };
 
 }
