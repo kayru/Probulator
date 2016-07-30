@@ -62,13 +62,13 @@ namespace Probulator
 
 		const float x2 = x*x;
 		const float y2 = y*y;
-		const float z2 = z*z;
+		//const float z2 = z*z;
 
-		const float z3 = z2*z;
+		//const float z3 = z2*z;
 
-		const float x4 = x2*x2;
-		const float y4 = y2*y2;
-		const float z4 = z2*z2;
+		//const float x4 = x2*x2;
+		//const float y4 = y2*y2;
+		//const float z4 = z2*z2;
 
 		const float sqrtPi = sqrt(pi);
 

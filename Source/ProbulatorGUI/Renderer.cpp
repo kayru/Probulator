@@ -122,7 +122,7 @@ ShaderProgramPtr createShaderProgram(
         GLchar errorLog[1024] = { 0 };
         glGetProgramInfoLog(result->m_native, 1024, NULL, errorLog);
         
-        printf((std::string() + "error linking program: " + errorLog).c_str());
+        printf("error linking program: %s", errorLog);
 		throw std::runtime_error("Failed to link shader program.");
     }
 
