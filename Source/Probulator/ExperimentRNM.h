@@ -12,6 +12,11 @@ class ExperimentRNM : public Experiment
 {
 public:
 
+	ExperimentRNM()
+	{
+		m_isHemispherical = true;
+	}
+
 	struct RNMBasis
 	{
 		vec3 irradiance[3];

@@ -213,6 +213,10 @@ public:
     std::vector<Experiment*> m_dependencies;
     Experiment* m_input = nullptr;
 
+	// Indicates if experiment results are only valid in a hemisphere around [0,0,1] vector.
+	// This is important for some representations, such as H-basis and RNM.
+	bool m_isHemispherical = false;
+
     // Common experiment outputs
 
     Image m_radianceImage;

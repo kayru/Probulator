@@ -9,6 +9,11 @@ class ExperimentHBasis : public Experiment
 {
 public:
 
+	ExperimentHBasis()
+	{
+		m_isHemispherical = true;
+	}
+
     void run(SharedData& data) override
     {
         HBasisT<vec3, L> hRadiance = {};
