@@ -39,7 +39,7 @@ public:
             vec3 sampleH = max(vec3(0.0f), hDot(hRadiance, directionH));
             m_radianceImage.at(pixelPos) = vec4(sampleH, 1.0f);
 
-            vec3 sampleIrradianceH = max(vec3(0.0f), hDot(hRadiance, directionH));
+            vec3 sampleIrradianceH = max(vec3(0.0f), hDot(hIrradiance, directionH));
             m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceH, 1.0f);
         });
     }
