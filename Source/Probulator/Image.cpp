@@ -127,7 +127,7 @@ namespace Probulator
 		return result;
 	}
 
-	Image imageSymmetricAbsolutePercentageError(const Image& reference, const Image& image)
+	Image imageSymmetricAbsolutePercentageError(const Image& reference, const Image& image, const Image* errorWeight)
 	{
 		ivec2 size = min(reference.getSize(), image.getSize());
 
@@ -138,6 +138,10 @@ namespace Probulator
 			for (int x = 0; x < size.x; ++x)
 			{
 				vec4 absDiff = abs(reference.at(x, y) - image.at(x, y));
+				if (errorWeight)
+				{
+					absDiff *= errorWeight->at(x, y);
+				}
 				vec4 sum = reference.at(x, y) + image.at(x, y);
 				result.at(x, y) = absDiff / sum;
 			}
@@ -146,16 +150,24 @@ namespace Probulator
 		return result;
 	}
 
-	vec4 imageMeanSquareError(const Image& reference, const Image& image)
+	vec4 imageMeanSquareError(const Image& reference, const Image& image, const Image* errorWeight)
 	{
 		vec4 errorSquaredSum = vec4(0.0f);
 
 		ivec2 size = min(reference.getSize(), image.getSize());
+		if (errorWeight)
+		{
+			size = min(size, errorWeight->getSize());
+		}
 		for (int y = 0; y < size.y; ++y)
 		{
 			for (int x = 0; x < size.x; ++x)
 			{
 				vec4 error = reference.at(x, y) - image.at(x, y);
+				if (errorWeight)
+				{
+					error *= errorWeight->at(x, y);
+				}
 				errorSquaredSum += error * error;
 			}
 		}

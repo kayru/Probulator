@@ -13,7 +13,7 @@
 
 using namespace Probulator;
 
-void generateReportHtml(const ExperimentList& experiments, const char* filename)
+void generateReportHtml(const ExperimentList& experiments, const Experiment::SharedData sharedData, const char* filename)
 {
 	Experiment* referenceMode = nullptr;
 	for(const auto& it : experiments)
@@ -36,10 +36,44 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 		f << "<td>Irradiance Error (sMAPE)</td>";
 	}
 	f << "<td>Mode</td></tr>" << std::endl;
+
+	Image sphereErrorWeight;
+	Image hemisphereErrorWeight;
+	Image sphereErrorMask;
+	Image hemisphereErrorMask;
+
+
+	if (!experiments.empty())
+	{
+		const ivec2 size = sharedData.m_outputSize;
+		const float area = size.x * size.y;
+		sphereErrorWeight = Image(size);
+		hemisphereErrorWeight = Image(size);
+		sphereErrorMask = Image(size);
+		hemisphereErrorMask = Image(size);
+		for(int y = 0; y<size.y; ++y)
+		{
+			for(int x = 0; x<size.x; ++x)
+			{
+				float weight = area * latLongTexelArea(ivec2(x, y), size) / fourPi;
+				sphereErrorWeight.at(x,y) = vec4(weight);
+				sphereErrorMask.at(x,y) = vec4(1.0f);
+				if (sharedData.m_directionImage.at(x,y).z > 0)
+				{
+					hemisphereErrorWeight.at(x,y) = vec4(weight);
+					hemisphereErrorMask.at(x,y) = vec4(1.0f);
+				}
+			}
+		}
+	}
+
 	for (const auto& it : experiments)
 	{
 		if (!it->m_enabled)
 			continue;
+
+		const Image* errorWeight = it->m_isHemispherical ? &hemisphereErrorWeight : &sphereErrorWeight;
+		const Image* errorMask = it->m_isHemispherical ? &hemisphereErrorMask : &sphereErrorMask;
 
 		std::ostringstream radianceFilename;
 		radianceFilename << "radiance" << it->m_suffix << ".png";
@@ -55,7 +89,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 		if (referenceMode && referenceMode != it.get())
 		{
 			f << "<br/>";
-			vec4 mse = imageMeanSquareError(referenceMode->m_radianceImage, it->m_radianceImage);
+			vec4 mse = imageMeanSquareError(referenceMode->m_radianceImage, it->m_radianceImage, errorWeight);
 			float mseScalar = dot(vec3(1.0f/3.0f), (vec3)mse);
 			f << "MSE: " << mseScalar << " ";
 			f << "RMS: " << sqrtf(mseScalar);
@@ -66,7 +100,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 		if (referenceMode && referenceMode != it.get())
 		{
 			f << "<br/>";
-			vec4 mse = imageMeanSquareError(referenceMode->m_irradianceImage, it->m_irradianceImage);
+			vec4 mse = imageMeanSquareError(referenceMode->m_irradianceImage, it->m_irradianceImage, errorWeight);
 			float mseScalar = dot(vec3(1.0f/3.0f), (vec3)mse);
 			f << "MSE: " << mseScalar << " ";
 			f << "RMS: " << sqrtf(mseScalar);
@@ -81,7 +115,7 @@ void generateReportHtml(const ExperimentList& experiments, const char* filename)
 				irradianceErrorFilename << "irradianceError" << it->m_suffix << ".png";
 				it->m_radianceImage.writePng(irradianceErrorFilename.str().c_str());
 
-				Image errorImage = imageSymmetricAbsolutePercentageError(referenceMode->m_irradianceImage, it->m_irradianceImage);
+				Image errorImage = imageSymmetricAbsolutePercentageError(referenceMode->m_irradianceImage, it->m_irradianceImage, errorMask);
 				for (vec4& pixel : errorImage)
 				{
 					pixel.w = 1.0f;
@@ -299,7 +333,7 @@ int main(int argc, char** argv)
 		e->runWithDepencencies(sharedData);
 	}
 
-	generateReportHtml(experiments, "report.html");
+	generateReportHtml(experiments, sharedData, "report.html");
 	// generateReportMarkdown(experiments, inputFilename, "report.md");
 
 	return 0;
