@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Math.h"
+#include "SphericalHarmonics.h"
 
 namespace Probulator
 {
@@ -23,6 +24,25 @@ namespace Probulator
 	HBasis6 hEvaluate6(vec3 p);
 	
 	inline size_t hSize(size_t L) { return L; }
+
+	template <size_t H>
+	inline  HBasisT<vec3, H> convertShToHBasis(const SphericalHarmonicsT<vec3, 2>& sh)
+	{
+		static_assert(H == 4 || H == 6, "Only H-basis order 6 and 4 is implemented");
+		HBasisT<vec3, H> result;
+
+		result[0] = sh[0] * (1.0f / sqrtf(2.0f)) + sh[2] * ((1.0f / 2.0f) / sqrtf(3.0f / 2.0f));
+		result[1] = sh[1] * (1.0f / sqrtf(2.0f)) + sh[5] * ((3.0f / 8.0f) / sqrtf(5.0f / 2.0f));
+		result[2] = sh[2] * (1.0f / (2.0f*sqrtf(2.0f))) + sh[6] * ((1.0f / 4.0f) / sqrtf(15.0f / 2.0f));
+		result[3] = sh[3] * (1.0f / sqrtf(2.0f)) + sh[7] * ((3.0f / 8.0f) / sqrtf(5.0f / 2.0f));
+		if (H == 6)
+		{
+			result[4] = sh[4] * (1.0f / sqrtf(2.0f));
+			result[5] = sh[8] * (1.0f / sqrtf(2.0f));
+		}
+
+		return result;
+	}
 
 	template <typename Ta, typename Tb, typename Tw, size_t L>
 	inline void hAddWeighted(HBasisT<Ta, L>& accumulator, const HBasisT<Tb, L>& h, const Tw& weight)
@@ -49,9 +69,9 @@ namespace Probulator
 	{
 		HBasisT<float, L> result;
 
-		const float x = p.x;
-		const float y = p.y;
-		const float z = -p.z;
+		const float x = -p.x;
+		const float y = -p.y;
+		const float z = p.z;
 
 		const float x2 = x*x;
 		const float y2 = y*y;
