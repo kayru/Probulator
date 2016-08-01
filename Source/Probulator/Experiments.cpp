@@ -59,15 +59,15 @@ void addAllExperiments(ExperimentList& experiments)
 
     addExperiment<ExperimentHBasis<4>>(experiments, "HBasis-4", "H4")
         .setInput(experimentMCIS)
-		.setEnabled(false);
+		.setEnabled(true);
 
     addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
         .setInput(experimentMCIS)
-		.setEnabled(false);
+		.setEnabled(true);
 
     addExperiment<ExperimentRNM>(experiments, "Radiosity Normal Mapping", "RNM")
         .setInput(experimentMCIS)
-        .setEnabled(false);
+        .setEnabled(true);
 
     addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
         .setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation
