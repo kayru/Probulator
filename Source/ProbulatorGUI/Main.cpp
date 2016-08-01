@@ -662,7 +662,7 @@ public:
 
 	std::string m_objectFilename = "Data/Models/bunny.obj";
 	std::string m_envmapFilename = "Data/Probes/wells.hdr";
-	std::string m_normalFilename = "Data/Textures/monkey_n.png";
+	std::string m_normalFilename = "Data/Textures/hbasis_n.png";
 	ivec2 m_windowSize = ivec2(1280, 720);
 	ivec2 m_sceneViewport = ivec2(1, 1);
 	int m_menuWidth = max(100, m_windowSize.x - m_windowSize.y);

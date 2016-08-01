@@ -46,7 +46,7 @@ void generateReportHtml(const ExperimentList& experiments, const Experiment::Sha
 	if (!experiments.empty())
 	{
 		const ivec2 size = sharedData.m_outputSize;
-		const float area = size.x * size.y;
+		const float area = (float)(size.x * size.y);
 		sphereErrorWeight = Image(size);
 		hemisphereErrorWeight = Image(size);
 		sphereErrorMask = Image(size);
