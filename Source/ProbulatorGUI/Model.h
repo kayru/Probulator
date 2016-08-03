@@ -17,7 +17,7 @@ public:
 
 	struct ProceduralPlane
 	{
-		vec2 dimensions = vec2(1.0f);
+		vec2 dimensions = vec2(5.0f/3.0f, 1.0f);
 	};
 
 
