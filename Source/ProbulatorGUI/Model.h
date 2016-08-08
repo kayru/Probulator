@@ -20,7 +20,6 @@ public:
 		vec2 dimensions = vec2(5.0f/3.0f, 1.0f);
 	};
 
-
 	Model(const char* objFilename);
 	Model(const ProceduralSphere& sphere);
 	Model(const ProceduralPlane& plane);

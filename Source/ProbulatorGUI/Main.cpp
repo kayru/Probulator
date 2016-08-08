@@ -22,6 +22,8 @@
 #include <memory>
 #include <chrono>
 
+#pragma optimize("", off)
+
 typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
 
 inline TimePoint getCurrentTime()
@@ -597,6 +599,21 @@ public:
 		m_envmapFilename = filename;
 
 		bool imageLoaded = m_radianceImage.readHdr(m_envmapFilename.c_str());
+		int aspect = (int)roundf(m_radianceImage.getAspect() * 4.0f);
+		if (aspect == 8)
+		{
+			// image appears to be in lat-long layout -- nothing else to do
+		}
+		else if (aspect == 3)
+		{
+			// image appears to be a cross -- convert to lat-long layout
+			m_radianceImage = imageConvertCrossToLatLong(m_radianceImage, m_irradianceImageSize*2);
+		}
+		else
+		{
+			printf("Warning: unexpected image aspect ratio. Assuming latlong layout.");
+		}
+
 		if (!imageLoaded)
 		{
 			m_radianceImage = Image(4, 4);

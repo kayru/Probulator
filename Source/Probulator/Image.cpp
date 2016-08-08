@@ -101,6 +101,54 @@ namespace Probulator
 		return at(pos);
 	}
 
+	vec4 Image::sampleCrossNearest(vec3 dir) const
+	{
+		vec2 offset;
+		vec2 faceUV;
+
+		vec3 absDir = abs(dir);
+		float maxComponent = max(max(absDir.x, absDir.y), absDir.z);
+
+		if (absDir.x > absDir.y && absDir.x > absDir.z)
+		{
+			faceUV = vec2(dir.x > 0.0f ? dir.z : -dir.z, dir.y);
+			offset = dir.x > 0.0f ? vec2(2.0f, 1.0f) : vec2(0.0f, 1.0f);
+		}
+		else if (absDir.y > absDir.x && absDir.y > absDir.z)
+		{
+			faceUV = vec2(dir.x, dir.y > 0.0f ? dir.z : -dir.z);
+			offset = dir.y > 0.0f ? vec2(1.0f, 0.0f) : vec2(1.0f, 2.0f);
+		}
+		else
+		{
+			faceUV = vec2(dir.x, dir.z > 0.0f ? -dir.y : dir.y);
+			offset = dir.z > 0.0f ? vec2(1.0f, 3.0f) : vec2(1.0f, 1.0f);
+		}
+
+		faceUV = vec2(
+			+0.5f * (faceUV.x / maxComponent) + 0.5f, 
+			-0.5f * (faceUV.y / maxComponent) + 0.5f);
+
+		return sampleNearest((offset + faceUV) / vec2(3.0f, 4.0f));
+	}
+
+	Image imageConvertCrossToLatLong(const Image& input, ivec2 outputSize)
+	{
+		Image result(outputSize);
+
+		for (int y = 0; y < outputSize.y; ++y)
+		{
+			for (int x = 0; x < outputSize.x; ++x)
+			{
+				vec2 uv = (vec2(x, y) + vec2(0.5f)) / vec2(outputSize);
+				vec3 dir = latLongTexcoordToCartesian(uv);
+				result.at(x, y) = input.sampleCrossNearest(dir);
+			}
+		}
+
+		return result;
+	}
+
 	Image imageResize(const Image& input, ivec2 newSize)
 	{
 		Image output(newSize);

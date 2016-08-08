@@ -132,6 +132,7 @@ namespace Probulator
 		{}
 
 		vec4 sampleNearest(vec2 uv) const;
+		vec4 sampleCrossNearest(vec3 dir) const;
 
 		float* data() { return m_pixels.empty() ? nullptr : &m_pixels[0].x; }
 		const float* data() const { return m_pixels.empty() ? nullptr : &m_pixels[0].x; }
@@ -145,6 +146,7 @@ namespace Probulator
 		void paste(const Image& src, ivec2 pos);
 	};
 
+	Image imageConvertCrossToLatLong(const Image& input, ivec2 outputSize);
 	Image imageResize(const Image& input, ivec2 newSize);
 	Image imageDifference(const Image& reference, const Image& image);
 	Image imageSymmetricAbsolutePercentageError(const Image& reference, const Image& image, const Image* errorWeight);
