@@ -103,6 +103,11 @@ namespace Probulator
 
 	vec4 Image::sampleCrossNearest(vec3 dir) const
 	{
+		// HACK: uncomment to convert coordinates in order to reproduce images from 'Efficient Irradiance Normal Mapping' paper
+		// dir.x = -dir.x;
+		// dir.y = -dir.y;
+		// std::swap(dir.z, dir.y);
+
 		vec2 offset;
 		vec2 faceUV;
 
