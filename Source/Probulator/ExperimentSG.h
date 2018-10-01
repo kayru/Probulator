@@ -160,20 +160,18 @@ public:
     {
         const u32 lobeCount = (u32)m_lobes.size();
 
-        float lobeMCSphericalIntegrals[lobeCount];
+        std::vector<float> lobeMCSphericalIntegrals(lobeCount, 0.0f);
 
-        for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt) {
-            lobeMCSphericalIntegrals[lobeIt] = 0.f;
-        }
-
-        float lobePrecomputedSphericalIntegrals[lobeCount];
+        std::vector<float> lobePrecomputedSphericalIntegrals(lobeCount);
         for (u64 lobeIt = 0; lobeIt < lobeCount; ++lobeIt)
         {
             lobePrecomputedSphericalIntegrals[lobeIt] = (1.f - exp(-4.f * m_lobes[lobeIt].lambda)) / (4 * m_lobes[lobeIt].lambda);
         }
 
         float totalSampleWeight = 0.f;
-        
+
+        std::vector<float> sampleLobeWeights(lobeCount);
+
         for (const RadianceSample& sample : radianceSamples) {
             const float sampleWeight = 1.f;
             totalSampleWeight += sampleWeight;
@@ -181,10 +179,9 @@ public:
 
             vec3 currentEstimate = vec3(0.f);
 
-            float sampleLobeWeights[lobeCount];
             for (u32 lobeIt = 0; lobeIt < lobeCount; ++lobeIt) {
                 float dotProduct = dot(m_lobes[lobeIt].p, sample.direction);
-                float weight = exp(m_lobes[lobeIt].lambda * (dotProduct - 1.0));
+                float weight = exp(m_lobes[lobeIt].lambda * (dotProduct - 1.0f));
                 currentEstimate += m_lobes[lobeIt].mu * weight;
 
                 sampleLobeWeights[lobeIt] = weight;
