@@ -51,4 +51,37 @@ namespace Probulator
 		return sgFindMu(targetLambda, targetIntegral);
 	}
 
+    // Stephen Hill [2016], https://mynameismjp.wordpress.com/2016/10/09/sg-series-part-3-diffuse-lighting-from-an-sg-light-source/
+    vec3 sgIrradianceFitted(const SphericalGaussian& lightingLobe, const vec3& normal)
+    {
+        if(lightingLobe.lambda == 0.f)
+            return lightingLobe.mu;
+        
+        const float muDotN = dot(lightingLobe.p, normal);
+        const float lambda = lightingLobe.lambda;
+        
+        const float c0 = 0.36f;
+        const float c1 = 1.0f / (4.0f * c0);
+        
+        float eml  = exp(-lambda);
+        float em2l = eml * eml;
+        float rl   = 1.f / lambda;
+        
+        float scale = 1.0f + 2.0f * em2l - rl;
+        float bias  = (eml - em2l) * rl - em2l;
+        
+        float x  = sqrt(1.0f - scale);
+        float x0 = c0 * muDotN;
+        float x1 = c1 * x;
+        
+        float n = x0 + x1;
+        
+        float y = saturate(muDotN);
+        if(abs(x0) <= x1)
+            y = n * n / x;
+        
+        float result = scale * y + bias;
+        
+        return result * lightingLobe.mu * sgIntegral(lightingLobe.lambda);
+    }
 }

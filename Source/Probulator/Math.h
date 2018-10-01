@@ -173,6 +173,19 @@ namespace Probulator
 		float vdc = float(bits) * 2.3283064365386963e-10f;
 		return vec2(float(i) / float(n), vdc);
 	}
+    
+    inline float sampleHalton(u32 index, u32 base)
+    {
+        float f = 1.f;
+        float r = 0.f;
+        
+        while (index > 0) {
+            f = f / float(base);
+            r += f * float(index % base);
+            index /= base;
+        }
+        return r;
+    }
 
 	inline vec3 sampleUniformHemisphere(float u, float v)
 	{
