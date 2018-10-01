@@ -72,5 +72,16 @@ namespace Probulator
 	{
 		return dot(sgBasisMeanSquareError(basis, radianceSamples), vec3(1.0f / 3.0f));
 	}
+    
+    // Stephen Hill [2016], https://mynameismjp.wordpress.com/2016/10/09/sg-series-part-3-diffuse-lighting-from-an-sg-light-source/
+    vec3 sgBasisIrradianceFitted(const SgBasis& basis, const vec3& normal)
+    {
+        vec3 result = vec3(0.0f);
+        for (const SphericalGaussian& basisLobe : basis)
+        {
+            result += sgIrradianceFitted(basisLobe, normal);
+        }
+        return result / pi;
+    }
 
 }
