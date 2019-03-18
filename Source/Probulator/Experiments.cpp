@@ -5,6 +5,7 @@
 #include <Probulator/ExperimentSG.h>
 #include <Probulator/ExperimentHBasis.h>
 #include <Probulator/ExperimentAmbientCube.h>
+#include <Probulator/ExperimentAmbientDice.h>
 
 namespace Probulator
 {
@@ -63,6 +64,18 @@ void addAllExperiments(ExperimentList& experiments)
     addExperiment<ExperimentHBasis<6>>(experiments, "HBasis-6", "H6")
         .setInput(experimentMCIS)
 		.setEnabled(false);
+    
+    addExperiment<ExperimentAmbientDice>(experiments, "Ambient Dice [Bezier]", "AD")
+    .setDiceType(AmbientDiceTypeBezier)
+    .setInput(experimentMCIS);
+    
+    addExperiment<ExperimentAmbientDice>(experiments, "Ambient Dice [Bezier Y/Co/Cg]", "ADYCoCg")
+    .setDiceType(AmbientDiceTypeBezierYCoCg)
+    .setInput(experimentMCIS);
+    
+    addExperiment<ExperimentAmbientDice>(experiments, "Ambient Dice [Cosine SRBF]", "ADRBF")
+    .setDiceType(AmbientDiceTypeSRBF)
+    .setInput(experimentMCIS);
 
     addExperiment<ExperimentSGNaive>(experiments, "Spherical Gaussians [Naive]", "SG")
         .setBrdfLambda(8.5f) // Chosen arbitrarily through experimentation

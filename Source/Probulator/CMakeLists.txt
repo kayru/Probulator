@@ -11,6 +11,8 @@ add_library(Probulator
 	DiscreteDistribution.h
 	ExperimentAmbientCube.h
 	ExperimentAmbientCube.cpp
+	ExperimentAmbientDice.h
+	ExperimentAmbientDice.cpp
 	ExperimentHBasis.h
 	ExperimentMonteCarlo.h
 	Experiments.h
