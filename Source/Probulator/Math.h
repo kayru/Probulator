@@ -264,4 +264,26 @@ namespace Probulator
 	{
 		return dot(vec3(0.2126f, 0.7152f, 0.0722f), color);
 	}
+    
+    inline vec3 rgbToYCoCg( const glm::vec3 &rgb )
+    {
+        glm::vec3 YCoCg;
+        
+        YCoCg.x =   0.25f  * rgb.r + 0.5f * rgb.g + 0.25f * rgb.b;
+        YCoCg.y =   0.5f   * rgb.r                  - 0.5f  * rgb.b;
+        YCoCg.z = - 0.25f  * rgb.r + 0.5f * rgb.g - 0.25f * rgb.b;
+        
+        return YCoCg;
+    }
+    
+    inline vec3 YCoCTo2RGB( const glm::vec3 &YCoCg )
+    {
+        glm::vec3 rgb;
+        
+        rgb.x =  YCoCg.r + YCoCg.g - YCoCg.b;
+        rgb.y =  YCoCg.r + YCoCg.b;
+        rgb.z =  YCoCg.r - YCoCg.g - YCoCg.b;
+        
+        return rgb;
+    }
 }
