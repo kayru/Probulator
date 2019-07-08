@@ -1,5 +1,4 @@
 add_library(Probulator
-	Compute.cpp
 	Experiments.cpp
 	Image.cpp
 	SGBasis.cpp
@@ -7,7 +6,6 @@ add_library(Probulator
 	SGFitLeastSquares.cpp
 	SphericalGaussian.cpp
 	Common.h
-	Compute.h
 	DiscreteDistribution.h
 	ExperimentAmbientCube.h
 	ExperimentAmbientCube.cpp
@@ -31,9 +29,5 @@ add_library(Probulator
 	Thread.cpp
 	Variance.h
 )
-
-if(OpenCL_FOUND)
-	target_link_libraries(Probulator ${OpenCL_LIBRARIES})
-endif()
 
 target_link_libraries(Probulator stb enkiTS)

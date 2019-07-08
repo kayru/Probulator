@@ -20,13 +20,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR
 	include_directories(${tbbinclude})
 endif()
 
-find_package(OpenCL)
-
-if(OpenCL_FOUND)
-	add_definitions(-DUSE_OPENCL)
-	include_directories(${OpenCL_INCLUDE_DIRS})
-endif()
-
 add_subdirectory(Probulator)
 add_subdirectory(ProbulatorCLI)
 

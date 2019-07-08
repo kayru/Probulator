@@ -102,14 +102,12 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 	find_library(corevideo_lib CoreVideo)
 	find_library(foundation_lib Foundation)
 	find_library(iokit_lib IOKit)
-	find_library(opencl_lib OpenCL)
 	find_library(opengl_lib OpenGL)
 	target_link_libraries(glfw
 		${appkit_lib}
 		${corevideo_lib}
 		${foundation_lib}
 		${iokit_lib}
-		${opencl_lib}
 		${opengl_lib}
 		${EMBREE_LIBRARY}
 	)

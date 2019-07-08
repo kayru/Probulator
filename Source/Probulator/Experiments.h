@@ -11,7 +11,6 @@
 #include <Probulator/RadianceSample.h>
 #include <Probulator/SGFitGeneticAlgorithm.h>
 #include <Probulator/SGFitLeastSquares.h>
-#include <Probulator/Compute.h>
 #include <Probulator/DiscreteDistribution.h>
 #include <Probulator/DiscreteDistribution.h>
 
