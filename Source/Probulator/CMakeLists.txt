@@ -28,6 +28,7 @@ add_library(Probulator
 	SphericalGaussian.h
 	SphericalHarmonics.h
 	Thread.h
+	Thread.cpp
 	Variance.h
 )
 
@@ -35,10 +36,4 @@ if(OpenCL_FOUND)
 	target_link_libraries(Probulator ${OpenCL_LIBRARIES})
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR
-   ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	find_library(tbb tbb)
-	target_link_libraries(Probulator ${tbb})
-endif()
-
-target_link_libraries(Probulator stb)
+target_link_libraries(Probulator stb enkiTS)

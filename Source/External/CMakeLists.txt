@@ -13,11 +13,13 @@ add_subdirectory(glfw)
 add_subdirectory(nfd)
 add_subdirectory(stb)
 add_subdirectory(tinyobjloader)
+add_subdirectory(enkiTS)
 
 include_directories(
 	gl3w/include
 	glfw/include
 	glm
+	enkiTS
 )
 add_subdirectory(imgui)
 
@@ -28,3 +30,4 @@ set_property(TARGET glfw PROPERTY FOLDER "External")
 set_property(TARGET imgui PROPERTY FOLDER "External")
 set_property(TARGET nfd PROPERTY FOLDER "External")
 set_property(TARGET tinyobjloader PROPERTY FOLDER "External")
+set_property(TARGET enkiTS PROPERTY FOLDER "External")
