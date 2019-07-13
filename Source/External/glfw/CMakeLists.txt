@@ -91,6 +91,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 		${OPENGL_LIBRARY}
 		pthread
 		X11
+		Xinerama
+		Xcursor
 		Xxf86vm
 		Xrandr
 		Xi
