@@ -8,7 +8,7 @@
 
 namespace Probulator {
     
-    const float AmbientDice::kT = 0.6180339887498949;
+    const float AmbientDice::kT = 0.6180339887498949f;
     const float AmbientDice::kT2 = kT * kT;
     
     const vec3 AmbientDice::vertexPositions[12] =
@@ -172,12 +172,12 @@ namespace Probulator {
     template <typename T>
     void AmbientDice::hybridCubicBezierWeights(u32 triIndex, float b0, float b1, float b2, VertexWeights<T> *w0Out, VertexWeights<T> *w1Out, VertexWeights<T> *w2Out)
     {
-        const T alpha = 0.5f * sqrt(0.5 * (5.0f + sqrt(5.0f))); // 0.9510565163
-        const T beta = -0.5f * sqrt(0.1 * (5.0f + sqrt(5.0f))); // -0.4253254042
+        const T alpha = 0.5f * sqrt(0.5f * (5.0f + sqrt(5.0f))); // 0.9510565163
+        const T beta = -0.5f * sqrt(0.1f * (5.0f + sqrt(5.0f))); // -0.4253254042
         
-        const T a0 = (sqrt(5.0) - 5.0) / 40.0; // -0.06909830056
-        const T a1 = (11.0f * sqrt(5.0) - 15.0) / 40.0; // 0.2399186938
-        const T a2 = sqrt(5.0) / 10.0; // 0.2236067977
+        const T a0 = (sqrt(5.0f) - 5.0f) / 40.0f; // -0.06909830056
+        const T a1 = (11.0f * sqrt(5.0f) - 15.0f) / 40.0f; // 0.2399186938
+        const T a2 = sqrt(5.0f) / 10.0f; // 0.2236067977
         
         const T fValueFactor = -beta / alpha; // 0.4472135955
         
@@ -310,7 +310,7 @@ namespace Probulator {
     template<typename T>
     void AmbientDice::srbfWeights(vec3 direction, T *weightsOut)
     {
-        for (u64 i = 0; i < 6; i += 1) {
+        for (u32 i = 0; i < 6; i += 1) {
             float dotProduct = dot(direction, AmbientDice::srbfNormalisedVertexPositions[i]);
             u32 index = dotProduct > 0 ? (2 * i) : (2 * i + 1);
             
@@ -324,7 +324,7 @@ namespace Probulator {
     vec3 AmbientDice::evaluateSRBF(const vec3& direction) const
     {
         vec3 result = vec3(0.f);
-            for (u64 i = 0; i < 6; i += 1) {
+            for (u32 i = 0; i < 6; i += 1) {
                 float dotProduct = dot(direction, AmbientDice::srbfNormalisedVertexPositions[i]);
                 u32 index = dotProduct > 0 ? (2 * i) : (2 * i + 1);
                 
@@ -344,14 +344,14 @@ namespace Probulator {
     {
         using namespace Eigen;
         
-        const u64 sampleCount = 32768;
-        float sampleScale = 4 * M_PI / float(sampleCount);
+        const u32 sampleCount = 32768;
+        float sampleScale = 4 * pi / float(sampleCount);
         
         AmbientDice ambientDice;
         
         MatrixXf gram = MatrixXf::Zero(36, 36);
         
-        for (u64 sampleIt = 0; sampleIt < sampleCount; sampleIt += 1) {
+        for (u32 sampleIt = 0; sampleIt < sampleCount; sampleIt += 1) {
             vec2 sample = sampleHammersley(sampleIt, sampleCount);
             vec3 direction = sampleUniformSphere(sample.x, sample.y);
             
@@ -394,14 +394,14 @@ namespace Probulator {
     {
         using namespace Eigen;
         
-        const u64 sampleCount = 32768;
-        float sampleScale = 4 * M_PI / float(sampleCount);
+        const u32 sampleCount = 32768;
+        float sampleScale = 4 * pi / float(sampleCount);
         
         AmbientDice ambientDice;
         
         MatrixXf gram = MatrixXf::Zero(12, 12);
         
-        for (u64 sampleIt = 0; sampleIt < sampleCount; sampleIt += 1) {
+        for (u32 sampleIt = 0; sampleIt < sampleCount; sampleIt += 1) {
             vec2 sample = sampleHammersley(sampleIt, sampleCount);
             vec3 direction = sampleUniformSphere(sample.x, sample.y);
             
@@ -433,14 +433,14 @@ namespace Probulator {
     {
         using namespace Eigen;
         
-        const u64 sampleCount = 32768;
-        float sampleScale = 4 * M_PI / float(sampleCount);
+        const u32 sampleCount = 32768;
+        float sampleScale = 4 * pi / float(sampleCount);
         
         AmbientDice ambientDice;
         
         MatrixXf gram = MatrixXf::Zero(12, 12);
         
-        for (u64 sampleIt = 0; sampleIt < sampleCount; sampleIt += 1) {
+        for (u32 sampleIt = 0; sampleIt < sampleCount; sampleIt += 1) {
             vec2 sample = sampleHammersley(sampleIt, sampleCount);
             vec3 direction = sampleUniformSphere(sample.x, sample.y);
             
