@@ -54,7 +54,10 @@ Visual Studio 2013 may also work.
 
 #### Linux ####
 
-Linux support is not fully implemented.
+	mkdir Build
+	cd Build
+	cmake -DCMAKE_BUILD_TYPE=Release ..
+	cmake --build .
 
 How to run
 ----------

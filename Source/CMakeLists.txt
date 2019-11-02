@@ -14,12 +14,6 @@ include_directories(
 	External/enkiTS
 )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin" OR
-   ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	find_path(tbbinclude tbb)
-	include_directories(${tbbinclude})
-endif()
-
 add_subdirectory(Probulator)
 add_subdirectory(ProbulatorCLI)
 
