@@ -30,4 +30,6 @@ add_library(Probulator
 	Variance.h
 )
 
-target_link_libraries(Probulator stb enkiTS)
+target_link_libraries(Probulator stb enkiTS glm eigen)
+target_compile_features(Probulator PUBLIC cxx_std_11)
+target_include_directories(Probulator PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

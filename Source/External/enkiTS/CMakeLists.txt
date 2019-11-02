@@ -14,11 +14,5 @@ if( UNIX )
 	target_link_libraries( enkiTS ${CMAKE_THREAD_LIBS_INIT} )
 endif()
 
-
-if( UNIX )
-	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
-endif()
-if( APPLE )
-	SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
-endif()
-
+target_compile_features(enkiTS PRIVATE cxx_std_11)
+target_include_directories(enkiTS PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

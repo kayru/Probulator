@@ -111,6 +111,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 		${foundation_lib}
 		${iokit_lib}
 		${opengl_lib}
-		${EMBREE_LIBRARY}
 	)
 endif()
+
+target_include_directories(glfw PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

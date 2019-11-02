@@ -1,7 +1,3 @@
-if(CMAKE_COMPILER_IS_GNUCXX)
-	add_definitions(-std=c++11)
-elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-	add_definitions(-std=c++11 -stdlib=libc++)
-endif()
-
 add_library(tinyobjloader STATIC tiny_obj_loader.cc)
+target_compile_features(tinyobjloader PRIVATE cxx_std_11)
+target_include_directories(tinyobjloader PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
