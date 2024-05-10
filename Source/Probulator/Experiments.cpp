@@ -49,6 +49,8 @@ void addAllExperiments(ExperimentList& experiments)
 
     addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
 
+    addExperiment<ExperimentSHL1ZH3>(experiments, "Spherical Harmonics L1 [ZH3 Hallucinate]", "SHL1ZH3");
+
     addExperiment<ExperimentSH<1>>(experiments, "Spherical Harmonics L1", "SHL1");
     addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
     addExperiment<ExperimentSH<3>>(experiments, "Spherical Harmonics L3", "SHL3");

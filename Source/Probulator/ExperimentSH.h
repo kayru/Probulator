@@ -107,4 +107,35 @@ public:
 		});
 	}
 };
+
+class ExperimentSHL1ZH3: public Experiment
+{
+public:
+	void run(SharedData& data) override
+	{
+		SphericalHarmonicsL1RGB shRadiance = {};
+
+		const ivec2 imageSize = data.m_outputSize;
+		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
+		{
+			float texelArea = latLongTexelArea(pixelPos, imageSize);
+			vec3 radiance = (vec3)data.m_radianceImage.at(pixelPos);
+			shAddWeighted(shRadiance, shEvaluateL1(direction), radiance * texelArea);
+		});
+
+		m_radianceImage = Image(data.m_outputSize);
+		m_irradianceImage = Image(data.m_outputSize);
+
+		data.m_directionImage.forPixels2D([&](const vec3& direction, ivec2 pixelPos)
+		{
+			SphericalHarmonicsL1 directionSh = shEvaluateL1(direction);
+
+			vec3 sampleSh = max(vec3(0.0f), shDot(shRadiance, directionSh));
+			m_radianceImage.at(pixelPos) = vec4(sampleSh, 1.0f);
+
+			vec3 sampleIrradianceSh = max(vec3(0.0f), shEvaluateDiffuseL1ZH3Hallucinate(shRadiance, direction) / pi);
+			m_irradianceImage.at(pixelPos) = vec4(sampleIrradianceSh, 1.0f);
+		});
+	}
+};
 }

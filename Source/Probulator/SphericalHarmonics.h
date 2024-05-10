@@ -248,6 +248,26 @@ namespace Probulator
 		return shEvaluateDiffuse<T, 2>(sh, direction);
 	}
 
+	inline vec3 shEvaluateDiffuseL1ZH3Hallucinate(const SphericalHarmonicsL1RGB& sh, const vec3& n)
+	{
+		// From "ZH3: Quadratic Zonal Harmonics" - https://torust.me/ZH3.pdf
+
+		const vec3 lumCoefficients = vec3(0.2126f, 0.7152f, 0.0722f);
+		const vec3 zonalAxis = normalize(vec3(glm::dot(sh[3], lumCoefficients), glm::dot(sh[1], lumCoefficients), glm::dot(sh[2], lumCoefficients)));
+
+		const vec3 ratio = vec3(glm::abs(glm::dot(vec3(sh[3].x, sh[1].x, sh[2].x), zonalAxis)),
+								glm::abs(glm::dot(vec3(sh[3].y, sh[1].y, sh[2].y), zonalAxis)),
+								glm::abs(glm::dot(vec3(sh[3].z, sh[1].z, sh[2].z), zonalAxis))) / sh[0];
+		const vec3 zonalL2Coeff = sh[0] * (0.08f * ratio + 0.6f * ratio * ratio);
+
+		const float fZ = glm::dot(zonalAxis, n);
+		const float zhDir = sqrt(5.0f / (16.0f * pi)) * (3.0f * fZ * fZ - 1.0f);
+
+		const vec3 baseIrradiance = shEvaluateDiffuseL1(sh, n);
+
+		return baseIrradiance + (pi * 0.25f * zonalL2Coeff * zhDir);
+	}
+
 	template <size_t L>
 	float shFindWindowingLambda(const SphericalHarmonicsT<float, L>& sh, float maxLaplacian)
 	{
