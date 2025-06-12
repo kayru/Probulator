@@ -8,6 +8,7 @@ endif()
 
 # add external projects
 
+add_subdirectory(lbfgs)
 add_subdirectory(eigen)
 add_subdirectory(enkiTS)
 add_subdirectory(gl3w)
@@ -17,6 +18,7 @@ add_subdirectory(imgui)
 add_subdirectory(nfd)
 add_subdirectory(stb)
 add_subdirectory(tinyobjloader)
+add_subdirectory(zh3solver)
 
 # put external projects into a dedicated IDE folder
 
