@@ -6,6 +6,7 @@
 #include <Probulator/ExperimentHBasis.h>
 #include <Probulator/ExperimentAmbientCube.h>
 #include <Probulator/ExperimentAmbientDice.h>
+#include <Probulator/ExperimentZH3.h>
 
 namespace Probulator
 {
@@ -49,7 +50,9 @@ void addAllExperiments(ExperimentList& experiments)
 
     addExperiment<ExperimentSHL1Geomerics>(experiments, "Spherical Harmonics L1 [Geomerics]", "SHL1G");
 
-    addExperiment<ExperimentSHL1ZH3>(experiments, "Spherical Harmonics L1 [ZH3 Hallucinate]", "SHL1ZH3");
+    addExperiment<ExperimentZH3>(experiments, "ZH3 [Solve]", "ZH3");
+    addExperiment<ExperimentHallucinateZH3>(experiments, "ZH3 [Hallucinate from Spherical Harmonics L1]", "ZH3H");
+    addExperiment<ExperimentSolveHallucinateZH3>(experiments, "ZH3 [Hallucinate from solved Spherical Harmonics L1]", "ZH3HS");
 
     addExperiment<ExperimentSH<1>>(experiments, "Spherical Harmonics L1", "SHL1");
     addExperiment<ExperimentSH<2>>(experiments, "Spherical Harmonics L2", "SHL2");
